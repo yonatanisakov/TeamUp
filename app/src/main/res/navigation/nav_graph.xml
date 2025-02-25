@@ -6,7 +6,7 @@
 
     <fragment
         android:id="@+id/loginFragment"
-        android:name="com.idz.teamup.LoginFragment"
+        android:name="com.idz.teamup.ui.LoginFragment"
         android:label="Login">
         <action
             android:id="@+id/action_login_to_register"
@@ -18,7 +18,7 @@
 
     <fragment
         android:id="@+id/registerFragment"
-        android:name="com.idz.teamup.RegisterFragment"
+        android:name="com.idz.teamup.ui.RegisterFragment"
         android:label="Register">
         <action
             android:id="@+id/action_register_to_login"
@@ -26,7 +26,7 @@
     </fragment>
     <fragment
         android:id="@+id/homeFragment"
-        android:name="com.idz.teamup.HomeFragment"
+        android:name="com.idz.teamup.ui.HomeFragment"
         android:label="Home" >
     <action
         android:id="@+id/action_homeFragment_to_profileFragment"
@@ -34,6 +34,6 @@
     </fragment>
     <fragment
         android:id="@+id/profileFragment"
-        android:name="com.idz.teamup.ProfileFragment"
+        android:name="com.idz.teamup.ui.ProfileFragment"
         android:label="Profile" />
 </navigation>
