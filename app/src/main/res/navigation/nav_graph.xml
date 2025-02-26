@@ -54,6 +54,7 @@
         android:label="Group Details">
     <argument
         android:name="groupId"
-        app:argType="string" />
+        app:argType="string"
+        android:defaultValue=""/>
     </fragment>
 </navigation>
