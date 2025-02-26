@@ -1,12 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/nav_graph"
     app:startDestination="@id/loginFragment">
 
     <fragment
         android:id="@+id/loginFragment"
-        android:name="com.idz.teamup.LoginFragment"
+        android:name="com.idz.teamup.ui.LoginFragment"
         android:label="Login">
         <action
             android:id="@+id/action_login_to_register"
@@ -18,7 +19,7 @@
 
     <fragment
         android:id="@+id/registerFragment"
-        android:name="com.idz.teamup.RegisterFragment"
+        android:name="com.idz.teamup.ui.RegisterFragment"
         android:label="Register">
         <action
             android:id="@+id/action_register_to_login"
@@ -26,6 +27,33 @@
     </fragment>
     <fragment
         android:id="@+id/homeFragment"
-        android:name="com.idz.teamup.HomeFragment"
-        android:label="Home" />
+        android:name="com.idz.teamup.ui.HomeFragment"
+        android:label="Home" >
+        <action
+        android:id="@+id/action_homeFragment_to_profileFragment"
+        app:destination="@id/profileFragment" />
+        <action
+        android:id="@+id/action_homeFragment_to_createGroupFragment"
+        app:destination="@id/createGroupFragment" />
+        <action
+            android:id="@+id/action_homeFragment_to_groupDetailsFragment"
+            app:destination="@id/groupDetailsFragment" />
+    </fragment>
+    <fragment
+        android:id="@+id/profileFragment"
+        android:name="com.idz.teamup.ui.ProfileFragment"
+        android:label="Profile" />
+    <fragment
+        android:id="@+id/createGroupFragment"
+        android:name="com.idz.teamup.ui.CreateGroupFragment"
+        android:label="Create Group"
+        tools:layout="@layout/fragment_create_group" />
+    <fragment
+        android:id="@+id/groupDetailsFragment"
+        android:name="com.idz.teamup.ui.GroupDetailsFragment"
+        android:label="Group Details">
+    <argument
+        android:name="groupId"
+        app:argType="string" />
+    </fragment>
 </navigation>
