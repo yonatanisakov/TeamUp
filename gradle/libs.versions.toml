@@ -19,6 +19,7 @@ firebaseStorageKtx = "21.0.1"
 picasso = "2.8"
 firebaseAppcheckDebug = "18.0.0"
 firebaseAppcheckPlayintegrity = "18.0.0"
+
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 androidx-lifecycle-livedata-ktx = { module = "androidx.lifecycle:lifecycle-livedata-ktx", version.ref = "lifecycleViewmodelKtx" }
@@ -44,3 +45,4 @@ firebase-appcheck-playintegrity = { group = "com.google.firebase", name = "fireb
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 google-services = { id = "com.google.gms.google-services", version.ref = "google-services" }
+safe-args = { id = "androidx.navigation.safeargs.kotlin", version.ref = "navigation" }
