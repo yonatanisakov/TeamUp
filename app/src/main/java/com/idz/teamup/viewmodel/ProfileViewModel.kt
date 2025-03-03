@@ -48,7 +48,7 @@ class ProfileViewModel : ViewModel() {
             try {
                 imageRef.putFile(imageUri).await()
                 val uri = imageRef.downloadUrl.await()
-                onComplete(uri.toString()) // Return image URL instead of saving immediately
+                onComplete(uri.toString())
             } catch (e: Exception) {
                 onComplete(null)
             }

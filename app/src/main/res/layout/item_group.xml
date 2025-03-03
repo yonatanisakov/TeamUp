@@ -2,28 +2,55 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:orientation="vertical"
-    android:padding="12dp">
+    android:orientation="horizontal"
+    android:padding="8dp">
 
-    <TextView
-        android:id="@+id/groupName"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Group Name"
-        android:textSize="18sp"
-        android:textStyle="bold"/>
+    <ImageView
+        android:id="@+id/groupAdapterImageView"
+        android:layout_width="60dp"
+        android:layout_height="60dp"
+        android:scaleType="centerCrop"
+        android:layout_marginEnd="8dp"/>
 
-    <TextView
-        android:id="@+id/groupActivity"
-        android:layout_width="match_parent"
+    <LinearLayout
+        android:layout_width="0dp"
         android:layout_height="wrap_content"
-        android:text="Activity"
-        android:textSize="14sp"/>
+        android:layout_weight="1"
+        android:orientation="vertical">
 
-    <TextView
-        android:id="@+id/groupDate"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Date &amp; Time"
-        android:textSize="14sp"/>
+        <TextView
+            android:id="@+id/groupName"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textStyle="bold"
+            android:textSize="16sp"/>
+
+        <TextView
+            android:id="@+id/groupActivity"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="14sp"/>
+
+        <TextView
+            android:id="@+id/groupDate"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="12sp"
+            android:textColor="@android:color/darker_gray"/>
+
+        <TextView
+            android:id="@+id/creatorName"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="12sp"
+            android:textColor="@android:color/darker_gray"
+            android:textStyle="italic"/>
+        <TextView
+            android:id="@+id/groupLocation"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Location: Unknown"
+            android:textSize="14sp"
+            android:textColor="@android:color/darker_gray"/>
+    </LinearLayout>
 </LinearLayout>
