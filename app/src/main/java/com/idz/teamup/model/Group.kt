@@ -7,7 +7,7 @@ data class Group(
     val activityType: String = "",
     val location: String = "",
     val dateTime: String = "",
-    val imageUrl: String = "",
+    var imageUrl: String = "",
     val createdBy: String = "",
     val members: List<String> = emptyList()
 )

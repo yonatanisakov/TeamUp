@@ -52,9 +52,22 @@
         android:id="@+id/groupDetailsFragment"
         android:name="com.idz.teamup.ui.GroupDetailsFragment"
         android:label="Group Details">
+        <action
+            android:id="@+id/action_groupDetails_to_editGroup"
+            app:destination="@id/editGroupFragment"
+            android:inAnimation="@android:anim/slide_in_left"
+            android:outAnimation="@android:anim/slide_out_right"/>
     <argument
         android:name="groupId"
         app:argType="string"
         android:defaultValue=""/>
+    </fragment>
+    <fragment
+        android:id="@+id/editGroupFragment"
+        android:name="com.idz.teamup.ui.EditGroupFragment"
+        android:label="Edit Group">
+        <argument
+            android:name="groupId"
+            app:argType="string" />
     </fragment>
 </navigation>

@@ -49,7 +49,7 @@ class ProfileFragment : Fragment(R.layout.fragment_profile) {
         }
 
         deleteProfilePicButton.setOnClickListener {
-            profileImageView.setImageResource(R.drawable.ic_launcher_foreground) // Default image
+            profileImageView.setImageResource(R.drawable.ic_launcher_foreground)
             newImageUri = null
             isImageDeleted = true
         }
@@ -65,7 +65,7 @@ class ProfileFragment : Fragment(R.layout.fragment_profile) {
 
             when {
                 newImageUri != null -> {
-                    profileViewModel.uploadProfilePicture(newImageUri!!) { imageUrl ->
+                    profileViewModel.uploadProfilePicture(newImageUri?: Uri.EMPTY) { imageUrl ->
                         if (imageUrl != null) {
                             profileViewModel.updateUserProfile(updatedUser.copy(profileImageUrl = imageUrl)) { success ->
                                 showToast(if (success) "Profile updated!" else "Update failed!")
@@ -97,7 +97,7 @@ class ProfileFragment : Fragment(R.layout.fragment_profile) {
         // Logout
         logoutButton.setOnClickListener {
             profileViewModel.logout()
-            profileViewModel.user.removeObservers(viewLifecycleOwner) // Clear observer
+            profileViewModel.user.removeObservers(viewLifecycleOwner)
             showToast("Logged out")
             requireActivity().finish()
         }
@@ -105,9 +105,9 @@ class ProfileFragment : Fragment(R.layout.fragment_profile) {
 
     private val pickImage = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         if (uri != null) {
-            newImageUri = uri // Store selected image for later upload
-            isImageDeleted = false // Reset delete flag
-            profileImageView.setImageURI(uri) // Show preview
+            newImageUri = uri
+            isImageDeleted = false
+            profileImageView.setImageURI(uri)
         }
     }
 

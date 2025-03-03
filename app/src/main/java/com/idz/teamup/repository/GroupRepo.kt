@@ -12,7 +12,7 @@ class GroupRepo {
     suspend fun createGroup(group: Group): Boolean {
         return try {
             val groupId = db.collection("groups").document().id
-            val newGroup = group.copy(groupId = groupId, createdBy = auth.currentUser?.uid ?: "")
+            val newGroup = group.copy(groupId = groupId, createdBy = auth.currentUser?.email ?: "")
             db.collection("groups").document(groupId).set(newGroup).await()
             true
         } catch (e: Exception) {
