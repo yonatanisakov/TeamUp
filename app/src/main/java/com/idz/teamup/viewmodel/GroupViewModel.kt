@@ -1,43 +1,70 @@
 package com.idz.teamup.viewmodel
 
-import androidx.core.net.toUri
+import android.app.Application
+import android.net.Uri
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.google.firebase.storage.FirebaseStorage
+import com.idz.teamup.local.entity.GroupEntity
 import com.idz.teamup.model.Group
 import com.idz.teamup.repository.GroupRepo
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.tasks.await
-import java.util.UUID
 
-class GroupViewModel : ViewModel() {
-    private val groupRepo = GroupRepo()
+class GroupViewModel(application: Application) : AndroidViewModel(application) {
+
+    private val groupRepo = GroupRepo(application)
+
     private val _groups = MutableLiveData<List<Group>>()
-    val groups: LiveData<List<Group>> get() = _groups
+    val groups: LiveData<List<GroupEntity>> = groupRepo.getAllGroupsFromRoom()
+    companion object {
+        var refreshGroups = false
+        var updatedGroupId: String? = null
+    }
     fun createGroup(group: Group, onComplete: (Boolean) -> Unit) {
         viewModelScope.launch {
-            if (group.imageUrl.isNotEmpty()) {
-                try {
-                    val imageId = UUID.randomUUID().toString()
-                    val storageRef = FirebaseStorage.getInstance().reference.child("group_images/$imageId.jpg")
-                    storageRef.putFile(group.imageUrl.toUri()).await()
-                    group.imageUrl = storageRef.downloadUrl.await().toString()
-                } catch (e: Exception) {
-                    group.imageUrl = ""
+            try {
+                if (group.imageUrl.isNotEmpty()) {
+                    val imageUri = Uri.parse(group.imageUrl)
+                    val uploadedUrl = groupRepo.uploadImageToFirebase(imageUri)
+
+                    val updatedGroup = group.copy(imageUrl = uploadedUrl)
+                    val success = groupRepo.createGroup(updatedGroup)
+
+                    if (success) {
+                        refreshGroups = true
+                    }
+                    onComplete(success)
+                } else {
+                    val success = groupRepo.createGroup(group)
+                    if (success) {
+                        refreshGroups = true
+                    }
+                    onComplete(success)
                 }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                onComplete(false)
             }
-            val success = groupRepo.createGroup(group)
-            onComplete(success)
         }
     }
 
 
-    fun loadGroups() {
+    fun loadGroups(forceRefresh: Boolean = false) {
+        if (!forceRefresh && groups.value != null && groups.value?.isNotEmpty() == true && updatedGroupId == null) {
+            return
+        }
+
+        val specificGroupUpdate = updatedGroupId
+        updatedGroupId = null
+        refreshGroups = false
+
         viewModelScope.launch {
-            val groupList = groupRepo.getGroups()
-            _groups.postValue(groupList)
+            if (specificGroupUpdate != null) {
+                groupRepo.fetchGroupDetailsFromFirestore(specificGroupUpdate)
+            } else {
+                groupRepo.getGroups()
+            }
         }
     }
     fun searchGroups(query: String) {

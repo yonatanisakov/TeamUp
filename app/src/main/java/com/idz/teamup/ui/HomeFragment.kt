@@ -24,20 +24,40 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
     private lateinit var recyclerView: RecyclerView
     private lateinit var groupAdapter: GroupAdapter
     private lateinit var searchView: SearchView
+    private var scrollPosition = 0
+
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         recyclerView = view.findViewById(R.id.groupsRecyclerView)
-        recyclerView.layoutManager = LinearLayoutManager(requireContext())
+        val layoutManager = LinearLayoutManager(requireContext())
+        recyclerView.layoutManager = layoutManager
+
         searchView = view.findViewById(R.id.searchView)
+
         groupAdapter = GroupAdapter(emptyList()) { group ->
-            val action = HomeFragmentDirections.actionHomeFragmentToGroupDetailsFragment(group.groupId)
-            findNavController().navigate(action)
+            if (findNavController().currentDestination?.id == R.id.homeFragment) {
+                val action = HomeFragmentDirections.actionHomeFragmentToGroupDetailsFragment(group.groupId)
+                findNavController().navigate(action)
+            }
         }
         recyclerView.adapter = groupAdapter
-
+        if (savedInstanceState != null) {
+            scrollPosition = savedInstanceState.getInt("SCROLL_POSITION", 0)
+        }
         groupViewModel.groups.observe(viewLifecycleOwner) { groups ->
-            groupAdapter.updateGroups(groups)
+            groups?.let {
+                groupAdapter.updateGroups(it)
+
+                if (scrollPosition > 0 && groups.isNotEmpty()) {
+                    recyclerView.post {
+                        val targetPosition = minOf(scrollPosition, groups.size - 1)
+                        if (targetPosition >= 0) {
+                            recyclerView.scrollToPosition(targetPosition)
+                        }
+                    }
+                }
+            }
         }
 
         groupViewModel.loadGroups()
@@ -75,6 +95,21 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
                 }
             }
         }, viewLifecycleOwner, Lifecycle.State.RESUMED)
+    }
+    override fun onPause() {
+        super.onPause()
+        scrollPosition = (recyclerView.layoutManager as LinearLayoutManager).findFirstVisibleItemPosition()
+    }
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        scrollPosition = (recyclerView.layoutManager as LinearLayoutManager).findFirstVisibleItemPosition()
+        outState.putInt("SCROLL_POSITION", scrollPosition)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (GroupViewModel.refreshGroups || GroupViewModel.updatedGroupId != null)
+            groupViewModel.loadGroups(forceRefresh = true)
     }
 }
 

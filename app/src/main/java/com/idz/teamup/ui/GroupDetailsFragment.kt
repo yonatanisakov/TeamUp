@@ -1,7 +1,6 @@
 package com.idz.teamup.ui
 
 import android.os.Bundle
-import android.util.Log
 import android.view.View
 import android.widget.Button
 import android.widget.ImageView
@@ -23,7 +22,6 @@ class GroupDetailsFragment : Fragment(R.layout.fragment_group_details) {
 
     private val args: GroupDetailsFragmentArgs by navArgs()
     private val viewModel: GroupDetailsViewModel by viewModels()
-
     private lateinit var groupCreator: TextView
     private lateinit var groupName: TextView
     private lateinit var groupDescription: TextView
@@ -41,17 +39,18 @@ class GroupDetailsFragment : Fragment(R.layout.fragment_group_details) {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         setupUI(view)
+
         viewModel.loadGroupDetails(args.groupId)
 
-        viewModel.group.observe(viewLifecycleOwner) { group ->
-            group?.let {
+        viewModel.group.observe(viewLifecycleOwner) { group  ->
+            group ?.let {
                 updateGroupUI(it)
 
                 if (viewModel.weather.value.isNullOrEmpty()) {
                     viewModel.loadWeather(it.location, it.dateTime)
                 }
             } ?: run {
-                Toast.makeText(requireContext(), "Group not found!", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), "com.idz.teamup.model.Group not found!", Toast.LENGTH_SHORT).show()
                 findNavController().navigateUp()
             }
         }
@@ -61,11 +60,11 @@ class GroupDetailsFragment : Fragment(R.layout.fragment_group_details) {
                 groupWeatherDetails.text = weather
             }
         }
-
         viewModel.members.observe(viewLifecycleOwner) { members ->
             memberAdapter.updateMembers(members)
         }
         setupClickListeners()
+
     }
 
 
@@ -113,9 +112,11 @@ class GroupDetailsFragment : Fragment(R.layout.fragment_group_details) {
         joinLeaveButton.setOnClickListener {
             joinLeaveButton.isEnabled = false
             viewModel.toggleGroupMembership { success ->
-                joinLeaveButton.isEnabled = true
-                if (!success)
-                    Toast.makeText(requireContext(), "Failed to update membership", Toast.LENGTH_SHORT).show()
+                requireActivity().runOnUiThread {
+                    joinLeaveButton.isEnabled = true
+                    if (!success)
+                        Toast.makeText(requireContext(), "Failed to update membership", Toast.LENGTH_SHORT).show()
+                }
             }
         }
 
@@ -128,7 +129,7 @@ class GroupDetailsFragment : Fragment(R.layout.fragment_group_details) {
         deleteGroupButton.setOnClickListener {
             viewModel.deleteGroup(args.groupId) { success ->
                 if (success) {
-                    Toast.makeText(requireContext(), "Group deleted!", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(requireContext(), "com.idz.teamup.model.Group deleted!", Toast.LENGTH_SHORT).show()
                     findNavController().navigateUp()
                 } else {
                     Toast.makeText(requireContext(), "Delete failed!", Toast.LENGTH_SHORT).show()

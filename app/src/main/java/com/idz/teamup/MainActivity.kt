@@ -29,10 +29,13 @@ class MainActivity : AppCompatActivity() {
         setupActionBarWithNavController(navController)
 
         val auth = FirebaseAuth.getInstance()
-        if (auth.currentUser != null) {
+        if (auth.currentUser == null && navController.currentDestination?.id != R.id.loginFragment) {
+            navController.navigate(R.id.loginFragment)
+        } else if (auth.currentUser != null && navController.currentDestination?.id == R.id.loginFragment) {
             navController.navigate(R.id.action_loginFragment_to_homeFragment)
         }
     }
+
 
     override fun onSupportNavigateUp(): Boolean {
         return navController.navigateUp() || super.onSupportNavigateUp()

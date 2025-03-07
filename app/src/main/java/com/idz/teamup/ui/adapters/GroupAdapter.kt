@@ -5,12 +5,13 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
+import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import com.idz.teamup.R
-import com.idz.teamup.model.Group
+import com.idz.teamup.local.entity.GroupEntity
 import com.squareup.picasso.Picasso
 
-class GroupAdapter(private var groups: List<Group>, private val onItemClick: (Group) -> Unit) :
+class GroupAdapter(private var groups: List<GroupEntity>, private val onItemClick: (GroupEntity) -> Unit) :
     RecyclerView.Adapter<GroupAdapter.GroupViewHolder>() {
 
     class GroupViewHolder(view: View) : RecyclerView.ViewHolder(view) {
@@ -48,8 +49,20 @@ class GroupAdapter(private var groups: List<Group>, private val onItemClick: (Gr
 
     override fun getItemCount() = groups.size
 
-    fun updateGroups(newGroups: List<Group>) {
+    fun updateGroups(newGroups: List<GroupEntity>) {
+        val diffCallback = object : DiffUtil.Callback() {
+            override fun getOldListSize(): Int = groups.size
+            override fun getNewListSize(): Int = newGroups.size
+            override fun areItemsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
+                return groups[oldItemPosition].groupId == newGroups[newItemPosition].groupId
+            }
+            override fun areContentsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
+                return groups[oldItemPosition] == newGroups[newItemPosition]
+            }
+        }
+
+        val diffResult = DiffUtil.calculateDiff(diffCallback)
         groups = newGroups
-        notifyDataSetChanged()
+        diffResult.dispatchUpdatesTo(this)
     }
 }

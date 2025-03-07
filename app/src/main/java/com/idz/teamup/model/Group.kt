@@ -1,13 +1,22 @@
 package com.idz.teamup.model
 
+import com.idz.teamup.local.entity.GroupEntity
+
 data class Group(
-    val groupId: String = "",
+    var groupId: String = "",
     val name: String = "",
     val description: String = "",
     val activityType: String = "",
-    val location: String = "",
     val dateTime: String = "",
+    val location: String = "",
+    var createdBy: String = "",
     var imageUrl: String = "",
-    val createdBy: String = "",
-    val members: List<String> = emptyList()
-)
+    val members: List<String> = listOf(),
+    val weather: String = ""
+) {
+    fun toGroupEntity(): GroupEntity {
+        return GroupEntity(
+            groupId, name, description, activityType, dateTime, location, createdBy, imageUrl, members, weather
+        )
+    }
+}

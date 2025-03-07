@@ -7,6 +7,7 @@ import android.widget.*
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
+import androidx.navigation.fragment.findNavController
 import com.idz.teamup.R
 import com.idz.teamup.viewmodel.ProfileViewModel
 import com.squareup.picasso.Picasso
@@ -99,7 +100,7 @@ class ProfileFragment : Fragment(R.layout.fragment_profile) {
             profileViewModel.logout()
             profileViewModel.user.removeObservers(viewLifecycleOwner)
             showToast("Logged out")
-            requireActivity().finish()
+            findNavController().navigate(R.id.loginFragment)
         }
     }
 

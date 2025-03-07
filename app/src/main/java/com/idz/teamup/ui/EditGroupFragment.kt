@@ -64,7 +64,7 @@ class EditGroupFragment : Fragment(R.layout.fragment_edit_group) {
 
             viewModel.updateGroupDetails(args.groupId, newName, newDesc,newImageUri) { success ->
                 if (success) {
-                    Toast.makeText(requireContext(), "Group updated!", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(requireContext(), "com.idz.teamup.model.Group updated!", Toast.LENGTH_SHORT).show()
                     requireActivity().onBackPressedDispatcher.onBackPressed()
                 } else {
                     Toast.makeText(requireContext(), "Update failed!", Toast.LENGTH_SHORT).show()
