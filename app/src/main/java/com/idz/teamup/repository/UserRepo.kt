@@ -1,5 +1,6 @@
 package com.idz.teamup.repository
 
+import android.util.Log
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.idz.teamup.model.User
@@ -18,6 +19,8 @@ class UserRepo {
                 val document = db.collection("users").document(userId).get().await()
                 document.toObject(User::class.java)
             } catch (e: Exception) {
+                Log.e("TeamUp", "Error in ${this::class.java.simpleName}: ${e.message}", e)
+
                 null
             }
         }
@@ -29,6 +32,8 @@ class UserRepo {
                 db.collection("users").document(user.userId).set(user).await()
                 true
             } catch (e: Exception) {
+                Log.e("TeamUp", "Error in ${this::class.java.simpleName}: ${e.message}", e)
+
                 false
             }
         }

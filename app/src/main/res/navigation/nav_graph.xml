@@ -73,4 +73,18 @@
             android:name="groupId"
             app:argType="string" />
     </fragment>
+    <fragment
+        android:id="@+id/myGroupsFragment"
+        android:name="com.idz.teamup.ui.MyGroupsFragment"
+        android:label="My Groups">
+        <action
+            android:id="@+id/action_myGroupsFragment_to_groupDetailsFragment"
+            app:destination="@id/groupDetailsFragment" />
+        <action
+            android:id="@+id/action_myGroupsFragment_to_editGroupFragment"
+            app:destination="@id/editGroupFragment" />
+        <action
+            android:id="@+id/action_myGroupsFragment_to_createGroupFragment"
+            app:destination="@id/createGroupFragment" />
+    </fragment>
 </navigation>

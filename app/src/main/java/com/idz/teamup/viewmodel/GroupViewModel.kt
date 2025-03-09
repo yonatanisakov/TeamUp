@@ -2,6 +2,7 @@ package com.idz.teamup.viewmodel
 
 import android.app.Application
 import android.net.Uri
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -14,14 +15,17 @@ import kotlinx.coroutines.launch
 class GroupViewModel(application: Application) : AndroidViewModel(application) {
 
     private val groupRepo = GroupRepo(application)
-
-    private val _groups = MutableLiveData<List<Group>>()
     val groups: LiveData<List<GroupEntity>> = groupRepo.getAllGroupsFromRoom()
+
+    private val _isLoading = MutableLiveData<Boolean>()
+    val isLoading: LiveData<Boolean> get() = _isLoading
     companion object {
         var refreshGroups = false
         var updatedGroupId: String? = null
     }
     fun createGroup(group: Group, onComplete: (Boolean) -> Unit) {
+        _isLoading.value = true
+
         viewModelScope.launch {
             try {
                 if (group.imageUrl.isNotEmpty()) {
@@ -43,8 +47,12 @@ class GroupViewModel(application: Application) : AndroidViewModel(application) {
                     onComplete(success)
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.e("TeamUp", "Error in ${this::class.java.simpleName}: ${e.message}", e)
+
                 onComplete(false)
+
+            } finally {
+                _isLoading.value = false
             }
         }
     }
@@ -54,6 +62,9 @@ class GroupViewModel(application: Application) : AndroidViewModel(application) {
         if (!forceRefresh && groups.value != null && groups.value?.isNotEmpty() == true && updatedGroupId == null) {
             return
         }
+
+        _isLoading.value = true
+
 
         val specificGroupUpdate = updatedGroupId
         updatedGroupId = null
@@ -65,14 +76,10 @@ class GroupViewModel(application: Application) : AndroidViewModel(application) {
             } else {
                 groupRepo.getGroups()
             }
+            _isLoading.value = false
+
         }
     }
-    fun searchGroups(query: String) {
-        val filteredGroups = _groups.value?.filter {
-            it.name.contains(query, ignoreCase = true) ||
-                    it.activityType.contains(query, ignoreCase = true)
-        }
-        _groups.postValue(filteredGroups ?: emptyList())
-    }
+
 
 }

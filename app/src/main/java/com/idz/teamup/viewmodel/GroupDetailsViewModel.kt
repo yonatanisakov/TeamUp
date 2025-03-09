@@ -2,6 +2,7 @@ package com.idz.teamup.viewmodel
 
 import android.app.Application
 import android.net.Uri
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -10,7 +11,9 @@ import androidx.lifecycle.viewModelScope
 import com.idz.teamup.model.Group
 import com.idz.teamup.repository.GroupRepo
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class GroupDetailsViewModel(application: Application) : AndroidViewModel(application) {
     private val repo = GroupRepo(application)
@@ -25,15 +28,27 @@ class GroupDetailsViewModel(application: Application) : AndroidViewModel(applica
     private val _weather = MutableLiveData<String>()
     val weather: LiveData<String> get() = _weather
 
+    private val _isLoading = MutableLiveData<Boolean>()
+    val isLoading: LiveData<Boolean> get() = _isLoading
+
     fun loadGroupDetails(groupId: String) {
+        _isLoading.value = true
+
         viewModelScope.launch() {
-            repo.getGroupDetails(groupId).observeForever { entity ->
-                entity?.let {
-                    _group.postValue(it.toGroup())
-                    _members.postValue(it.members)
+            try {
+                repo.getGroupDetails(groupId).observeForever { entity ->
+                    entity?.let {
+                        _group.postValue(it.toGroup())
+                        _members.postValue(it.members)
+                        _isLoading.postValue(false)
+
+                    }
                 }
+                repo.fetchGroupDetailsFromFirestore(groupId)
+            }catch (e: Exception) {
+                _isLoading.postValue(false)
+                Log.e("GroupDetailsViewModel", "Error loading group details: ${e.message}", e)
             }
-            repo.fetchGroupDetailsFromFirestore(groupId)
         }
     }
 
@@ -54,38 +69,81 @@ class GroupDetailsViewModel(application: Application) : AndroidViewModel(applica
         newImageUri: Uri?,
         onComplete: (Boolean) -> Unit
     ) {
+        _isLoading.value = true
+
         viewModelScope.launch {
-            repo.updateGroupDetails(groupId, newName, newDesc, newImageUri){ success ->
-                if (success) {
-                    loadGroupDetails(groupId)
-                    GroupViewModel.updatedGroupId = groupId
+            try {
+                repo.updateGroupDetails(groupId, newName, newDesc, newImageUri) { success ->
+                    _isLoading.postValue(false)
+
+                    if (success) {
+                        loadGroupDetails(groupId)
+                        GroupViewModel.updatedGroupId = groupId
+                    }
+                    onComplete(success)
                 }
-                onComplete(success)
+            }catch (e: Exception) {
+                _isLoading.postValue(false)
+                onComplete(false)
+                Log.e("GroupDetailsViewModel", "Error updating group: ${e.message}", e)
+            }
+
+        }
+    }
+
+
+
+    fun deleteGroup(groupId: String, onComplete: (Boolean) -> Unit) {
+        _isLoading.value = true
+
+        GlobalScope.launch(Dispatchers.IO + kotlinx.coroutines.NonCancellable) {
+            try {
+                var success = false
+                try {
+                    repo.deleteGroup(groupId) { result ->
+                        success = result
+                        if (success) {
+                            GroupViewModel.refreshGroups = true
+                        }
+                    }
+                } catch (e: Exception) {
+                    Log.e("GroupDetailsViewModel", "Error during group deletion: ${e.message}", e)
+                    success = false
+                }
+
+                withContext(Dispatchers.Main) {
+                    try {
+                        _isLoading.value = false
+                        onComplete(success)
+                    } catch (e: Exception) {
+                        // The fragment might be gone, which is expected
+                        Log.d("GroupDetailsViewModel", "Could not deliver callback - fragment likely detached")
+                    }
+                }
+            } catch (e: Exception) {
+                // This should never happen with NonCancellable, but just in case
+                Log.e("GroupDetailsViewModel", "Unexpected error in deletion coroutine: ${e.message}", e)
             }
         }
     }
 
 
-        fun deleteGroup(groupId: String, onComplete: (Boolean) -> Unit) {
-            viewModelScope.launch {
-                repo.deleteGroup(groupId){
-                        success ->
-                    if (success)
-                        GroupViewModel.refreshGroups = true
-                    onComplete(success)
-                }
-            }
-        }
-
-
     fun toggleGroupMembership(onComplete: (Boolean) -> Unit) {
+        _isLoading.value = true
         val groupId = _group.value?.groupId ?: return
         viewModelScope.launch {
-            repo.toggleGroupMembership(groupId) { success ->
-                if (success) {
-                    loadGroupDetails(groupId)
+            try {
+                repo.toggleGroupMembership(groupId) { success ->
+                    _isLoading.postValue(false)
+                    if (success) {
+                        loadGroupDetails(groupId)
+                    }
+                    onComplete(success)
                 }
-                onComplete(success)
+            }catch (e: Exception) {
+                _isLoading.postValue(false)
+                onComplete(false)
+                Log.e("GroupDetailsViewModel", "Error updating membership: ${e.message}", e)
             }
         }
     }

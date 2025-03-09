@@ -31,6 +31,7 @@ class GroupRepo(context: Context) {
             db.collection("groups").document(groupId).set(newGroup).await()
             true
         } catch (e: Exception) {
+            Log.e("TeamUp", "Error in ${this::class.java.simpleName}: ${e.message}", e)
             false
         }
     }
@@ -153,18 +154,21 @@ class GroupRepo(context: Context) {
 
                 db.collection("groups").document(groupId).update(updates).await()
 
-                val snapshot = db.collection("groups").document(groupId).get().await()
-                val updatedGroup = snapshot.toObject(Group::class.java)
-
-                updatedGroup?.let {
-                    groupDao.insertGroup(it.toGroupEntity())
+                val localGroup = groupDao.getGroupByIdSync(groupId)
+                localGroup?.let {
+                    val updatedEntity = it.copy(
+                        name = newName,
+                        description = newDesc,
+                        imageUrl = (newImageUri ?: it.imageUrl).toString()
+                    )
+                    groupDao.insertGroup(updatedEntity)
                 }
 
                 withContext(Dispatchers.Main) {
                     onComplete(true)
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.e("TeamUp", "Error in ${this::class.java.simpleName}: ${e.message}", e)
                 withContext(Dispatchers.Main) {
                     onComplete(false)
                 }
@@ -175,12 +179,21 @@ class GroupRepo(context: Context) {
         withContext(Dispatchers.IO) {
             try {
                 db.collection("groups").document(groupId).delete().await()
-                groupDao.clearGroups()
+                try {
+                    val group = groupDao.getGroupByIdSync(groupId)
+                    if (group != null) {
+                        groupDao.deleteGroup(groupId)
+                    }
+                } catch (e: Exception) {
+                    Log.e("GroupRepo", "Error deleting from local database: ${e.message}", e)
+                }
+                getGroups()
+
                 withContext(Dispatchers.Main) {
                     onComplete(true)
                 }
             } catch (e: Exception) {
-                e.printStackTrace()
+                Log.e("TeamUp", "Error in ${this::class.java.simpleName}: ${e.message}", e)
                 withContext(Dispatchers.Main) {
                     onComplete(false)
                 }
@@ -196,6 +209,10 @@ class GroupRepo(context: Context) {
             groupDao.updateWeather(groupId, weather)
         }
     }
-
+    suspend fun getAllGroupsFromRoomSync(): List<GroupEntity> {
+        return withContext(Dispatchers.IO) {
+            groupDao.getAllGroupsSync()
+        }
+    }
 
 }
