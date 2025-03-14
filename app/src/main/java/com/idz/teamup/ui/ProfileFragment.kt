@@ -7,6 +7,7 @@ import android.widget.*
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
+import androidx.navigation.NavOptions
 import androidx.navigation.fragment.findNavController
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.imageview.ShapeableImageView
@@ -16,8 +17,6 @@ import com.idz.teamup.viewmodel.ProfileViewModel
 import com.squareup.picasso.Picasso
 
 class ProfileFragment : Fragment(R.layout.fragment_profile) {
-
-
     private val profileViewModel: ProfileViewModel by viewModels()
 
     private lateinit var profileImageView: ShapeableImageView
@@ -35,7 +34,12 @@ class ProfileFragment : Fragment(R.layout.fragment_profile) {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        setupUI(view)
+        observeViewModel()
+        setupListeners()
 
+    }
+    private fun setupUI(view: View) {
         profileImageView = view.findViewById(R.id.profileImageView)
         profileNameText = view.findViewById(R.id.profileNameText)
         profileEmailText = view.findViewById(R.id.profileEmailText)
@@ -45,12 +49,21 @@ class ProfileFragment : Fragment(R.layout.fragment_profile) {
         deleteProfilePicButton = view.findViewById(R.id.deleteProfilePicButton)
         logoutButton = view.findViewById(R.id.logoutButton)
         loadingOverlay = view.findViewById(R.id.loadingOverlay)
+    }
+    private fun observeViewModel() {
+        profileViewModel.isLoading.observe(viewLifecycleOwner) { isLoading ->
+            loadingOverlay.visibility = if (isLoading) View.VISIBLE else View.GONE
+            saveProfileButton.isEnabled = !isLoading
+            changeProfilePicButton.isEnabled = !isLoading
+            deleteProfilePicButton.isEnabled = !isLoading
+            logoutButton.isEnabled = !isLoading
+        }
+
 
         profileViewModel.user.observe(viewLifecycleOwner) { user ->
             user?.let {
                 profileNameText.text = it.fullName
                 profileEmailText.text = it.email
-
                 editTextName.setText(it.fullName)
 
                 if (!isImageDeleted && newImageUri == null && it.profileImageUrl.isNotEmpty()) {
@@ -58,12 +71,14 @@ class ProfileFragment : Fragment(R.layout.fragment_profile) {
                         .load(it.profileImageUrl)
                         .fit()
                         .centerCrop()
-                        .into(profileImageView)                }
+                        .into(profileImageView)
+                }
             }
         }
 
         profileViewModel.loadUserProfile()
-
+    }
+    private fun setupListeners() {
         changeProfilePicButton.setOnClickListener {
             pickImage.launch("image/*")
         }
@@ -82,10 +97,16 @@ class ProfileFragment : Fragment(R.layout.fragment_profile) {
             profileViewModel.logout()
             profileViewModel.user.removeObservers(viewLifecycleOwner)
             showToast("Logged out")
-            findNavController().navigate(R.id.loginFragment)
+
+            findNavController().navigate(
+                R.id.loginFragment,
+                null,
+                NavOptions.Builder()
+                    .setPopUpTo(R.id.nav_graph, true)
+                    .build()
+            )
         }
     }
-
     private val pickImage = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         if (uri != null) {
             newImageUri = uri
@@ -112,50 +133,27 @@ class ProfileFragment : Fragment(R.layout.fragment_profile) {
             return
         }
 
-        loadingOverlay.visibility = View.VISIBLE
-        saveProfileButton.isEnabled = false
-
         val updatedUser = currentUser.copy(fullName = editTextName.text.toString().trim())
 
         when {
             newImageUri != null -> {
-                profileViewModel.uploadProfilePicture(newImageUri ?: Uri.EMPTY) { imageUrl ->
-                    if (imageUrl != null) {
-                        profileViewModel.updateUserProfile(updatedUser.copy(profileImageUrl = imageUrl)) { success ->
-                            loadingOverlay.visibility = View.GONE
-                            saveProfileButton.isEnabled = true
-                            showToast(if (success) "Profile updated!" else "Update failed!")
-                        }
-                    } else {
-                        loadingOverlay.visibility = View.GONE
-                        saveProfileButton.isEnabled = true
-                        showToast("Image upload failed!")
-                    }
+                val imageUri = newImageUri ?: return
+                profileViewModel.updateUserWithImage(updatedUser, imageUri) { success ->
+                    showToast(if (success) "Profile updated!" else "Update failed!")
                 }
             }
+
             isImageDeleted -> {
-                profileViewModel.deleteProfilePicture { success ->
-                    if (success) {
-                        profileViewModel.updateUserProfile(updatedUser.copy(profileImageUrl = "")) { profileUpdated ->
-                            loadingOverlay.visibility = View.GONE
-                            saveProfileButton.isEnabled = true
-                            showToast(if (profileUpdated) "Profile updated!" else "Update failed!")
-                        }
-                    } else {
-                        loadingOverlay.visibility = View.GONE
-                        saveProfileButton.isEnabled = true
-                        showToast("Image delete failed!")
-                    }
+                profileViewModel.deleteProfilePictureAndUpdate(updatedUser) { success ->
+                    showToast(if (success) "Profile updated!" else "Update failed!")
                 }
             }
+
             else -> {
-                profileViewModel.updateUserProfile(updatedUser) { profileUpdated ->
-                    loadingOverlay.visibility = View.GONE
-                    saveProfileButton.isEnabled = true
-                    showToast(if (profileUpdated) "Profile updated!" else "Update failed!")
+                profileViewModel.updateUserWithoutImage(updatedUser) { success ->
+                    showToast(if (success) "Profile updated!" else "Update failed!")
                 }
             }
         }
     }
-
 }

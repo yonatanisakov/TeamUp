@@ -12,8 +12,11 @@ import com.idz.teamup.model.Group
 import com.idz.teamup.repository.GroupRepo
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.supervisorScope
 import kotlinx.coroutines.withContext
+import kotlin.coroutines.cancellation.CancellationException
 
 class GroupDetailsViewModel(application: Application) : AndroidViewModel(application) {
     private val repo = GroupRepo(application)
@@ -34,20 +37,34 @@ class GroupDetailsViewModel(application: Application) : AndroidViewModel(applica
     fun loadGroupDetails(groupId: String) {
         _isLoading.value = true
 
-        viewModelScope.launch() {
+        viewModelScope.launch {
             try {
-                repo.getGroupDetails(groupId).observeForever { entity ->
-                    entity?.let {
-                        _group.postValue(it.toGroup())
-                        _members.postValue(it.members)
-                        _isLoading.postValue(false)
+                supervisorScope {
+                    repo.getGroupDetails(groupId).observeForever { entity ->
+                        entity?.let {
+                            _group.postValue(it.toGroup())
+                            _members.postValue(it.members)
+                            _isLoading.postValue(false)
+                        }
+                    }
 
+                    try {
+                        repo.fetchGroupDetailsFromFirestore(groupId)
+                    } catch (e: Exception) {
+                        if (e is CancellationException) {
+                            Log.d("GroupDetailsViewModel", "Fetch cancelled due to lifecycle change")
+                        } else {
+                            Log.e("GroupDetailsViewModel", "Error loading group details: ${e.message}", e)
+                        }
                     }
                 }
-                repo.fetchGroupDetailsFromFirestore(groupId)
-            }catch (e: Exception) {
+            } catch (e: Exception) {
                 _isLoading.postValue(false)
-                Log.e("GroupDetailsViewModel", "Error loading group details: ${e.message}", e)
+                if (e is CancellationException) {
+                    Log.d("GroupDetailsViewModel", "Operation cancelled due to lifecycle change")
+                } else {
+                    Log.e("GroupDetailsViewModel", "Error loading group details: ${e.message}", e)
+                }
             }
         }
     }
@@ -72,22 +89,33 @@ class GroupDetailsViewModel(application: Application) : AndroidViewModel(applica
         _isLoading.value = true
 
         viewModelScope.launch {
-            try {
-                repo.updateGroupDetails(groupId, newName, newDesc, newImageUri) { success ->
-                    _isLoading.postValue(false)
-
-                    if (success) {
-                        loadGroupDetails(groupId)
-                        GroupViewModel.updatedGroupId = groupId
+            withContext(NonCancellable) {
+                try {
+                    var success = false
+                    try {
+                        repo.updateGroupDetails(groupId, newName, newDesc, newImageUri) { result ->
+                            success = result
+                            if (success) {
+                                GroupViewModel.updatedGroupId = groupId
+                            }
+                        }
+                    } catch (e: Exception) {
+                        Log.e("GroupDetailsViewModel", "Error updating group details: ${e.message}", e)
+                        success = false
                     }
-                    onComplete(success)
-                }
-            }catch (e: Exception) {
-                _isLoading.postValue(false)
-                onComplete(false)
-                Log.e("GroupDetailsViewModel", "Error updating group: ${e.message}", e)
-            }
 
+                    withContext(Dispatchers.Main) {
+                        try {
+                            _isLoading.value = false
+                            onComplete(success)
+                        } catch (e: Exception) {
+                            Log.d("GroupDetailsViewModel", "Could not deliver callback - fragment likely detached")
+                        }
+                    }
+                } catch (e: Exception) {
+                    Log.e("GroupDetailsViewModel", "Unexpected error in update coroutine: ${e.message}", e)
+                }
+            }
         }
     }
 
@@ -96,33 +124,33 @@ class GroupDetailsViewModel(application: Application) : AndroidViewModel(applica
     fun deleteGroup(groupId: String, onComplete: (Boolean) -> Unit) {
         _isLoading.value = true
 
-        GlobalScope.launch(Dispatchers.IO + kotlinx.coroutines.NonCancellable) {
-            try {
-                var success = false
+        viewModelScope.launch {
+            withContext(NonCancellable) {
                 try {
-                    repo.deleteGroup(groupId) { result ->
-                        success = result
-                        if (success) {
-                            GroupViewModel.refreshGroups = true
+                    var success = false
+                    try {
+                        repo.deleteGroup(groupId) { result ->
+                            success = result
+                            if (success) {
+                                GroupViewModel.refreshGroups = true
+                            }
+                        }
+                    } catch (e: Exception) {
+                        Log.e("GroupDetailsViewModel", "Error during group deletion: ${e.message}", e)
+                        success = false
+                    }
+
+                    withContext(Dispatchers.Main) {
+                        try {
+                            _isLoading.value = false
+                            onComplete(success)
+                        } catch (e: Exception) {
+                            Log.d("GroupDetailsViewModel", "Could not deliver callback - fragment likely detached")
                         }
                     }
                 } catch (e: Exception) {
-                    Log.e("GroupDetailsViewModel", "Error during group deletion: ${e.message}", e)
-                    success = false
+                    Log.e("GroupDetailsViewModel", "Unexpected error in deletion coroutine: ${e.message}", e)
                 }
-
-                withContext(Dispatchers.Main) {
-                    try {
-                        _isLoading.value = false
-                        onComplete(success)
-                    } catch (e: Exception) {
-                        // The fragment might be gone, which is expected
-                        Log.d("GroupDetailsViewModel", "Could not deliver callback - fragment likely detached")
-                    }
-                }
-            } catch (e: Exception) {
-                // This should never happen with NonCancellable, but just in case
-                Log.e("GroupDetailsViewModel", "Unexpected error in deletion coroutine: ${e.message}", e)
             }
         }
     }

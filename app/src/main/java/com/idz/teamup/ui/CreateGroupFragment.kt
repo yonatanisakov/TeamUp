@@ -49,6 +49,7 @@ class CreateGroupFragment : Fragment(R.layout.fragment_create_group) {
     private val validCities = mutableSetOf<String>()
     private var imageUri: Uri? = null
     private var searchJob: Job? = null
+    private lateinit var newlyCreatedGroupId: String
 
     private val pickImage = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         if (uri != null) {
@@ -97,7 +98,7 @@ class CreateGroupFragment : Fragment(R.layout.fragment_create_group) {
 
     private fun setupListeners() {
         createGroupToolbar.setNavigationOnClickListener {
-            findNavController().navigateUp()
+            findNavController().navigate(R.id.myGroupsFragment)
         }
 
         pickImageButton.setOnClickListener {
@@ -157,7 +158,6 @@ class CreateGroupFragment : Fragment(R.layout.fragment_create_group) {
             return
         }
 
-
         val group = Group(
             name = name,
             location = location,
@@ -167,9 +167,10 @@ class CreateGroupFragment : Fragment(R.layout.fragment_create_group) {
             imageUrl = imageUri?.toString() ?: ""
         )
 
-        groupViewModel.createGroup(group) { success ->
+        groupViewModel.createGroup(group) { success, groupId ->
             requireActivity().runOnUiThread {
-                if (success) {
+                if (success && groupId != null) {
+                    newlyCreatedGroupId = groupId
                     showSuccessDialog()
                 } else {
                     Toast.makeText(requireContext(), "Failed to create group. Try again!", Toast.LENGTH_SHORT).show()
@@ -246,7 +247,8 @@ class CreateGroupFragment : Fragment(R.layout.fragment_create_group) {
 
         dialogView.findViewById<Button>(R.id.okButton).setOnClickListener {
             dialog.dismiss()
-            findNavController().navigateUp()
+            val action = CreateGroupFragmentDirections.actionCreateGroupFragmentToGroupDetailsFragment(newlyCreatedGroupId)
+            findNavController().navigate(action)
         }
 
         dialog.show()

@@ -23,33 +23,28 @@ class GroupViewModel(application: Application) : AndroidViewModel(application) {
         var refreshGroups = false
         var updatedGroupId: String? = null
     }
-    fun createGroup(group: Group, onComplete: (Boolean) -> Unit) {
+    fun createGroup(group: Group, onComplete: (Boolean,String?) -> Unit) {
         _isLoading.value = true
 
         viewModelScope.launch {
             try {
-                if (group.imageUrl.isNotEmpty()) {
+               val finalGroup =  if (group.imageUrl.isNotEmpty()) {
                     val imageUri = Uri.parse(group.imageUrl)
                     val uploadedUrl = groupRepo.uploadImageToFirebase(imageUri)
 
-                    val updatedGroup = group.copy(imageUrl = uploadedUrl)
-                    val success = groupRepo.createGroup(updatedGroup)
-
-                    if (success) {
-                        refreshGroups = true
-                    }
-                    onComplete(success)
+                   group.copy(imageUrl = uploadedUrl)
                 } else {
-                    val success = groupRepo.createGroup(group)
-                    if (success) {
-                        refreshGroups = true
-                    }
-                    onComplete(success)
+                    group
                 }
+                val result = groupRepo.createGroup(finalGroup)
+                if(result.first){
+                    refreshGroups = true
+                }
+                onComplete(result.first,result.second)
             } catch (e: Exception) {
                 Log.e("TeamUp", "Error in ${this::class.java.simpleName}: ${e.message}", e)
 
-                onComplete(false)
+                onComplete(false, null)
 
             } finally {
                 _isLoading.value = false

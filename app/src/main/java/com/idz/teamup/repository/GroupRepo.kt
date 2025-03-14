@@ -24,15 +24,16 @@ class GroupRepo(context: Context) {
     private val groupDao = GroupDatabase.getDatabase(context).groupDao()
     private var loadGroupsJob: kotlinx.coroutines.Job? = null
 
-    suspend fun createGroup(group: Group): Boolean {
+    suspend fun createGroup(group: Group): Pair<Boolean, String?> {
         return try {
             val groupId = db.collection("groups").document().id
             val newGroup = group.copy(groupId = groupId, createdBy = auth.currentUser?.email ?: "")
             db.collection("groups").document(groupId).set(newGroup).await()
-            true
+            Pair(true, groupId)
+
         } catch (e: Exception) {
             Log.e("TeamUp", "Error in ${this::class.java.simpleName}: ${e.message}", e)
-            false
+            Pair(false, null)
         }
     }
     suspend fun getGroups() {
@@ -67,8 +68,8 @@ class GroupRepo(context: Context) {
     }
 
     suspend fun fetchGroupDetailsFromFirestore(groupId: String) {
-        withContext(Dispatchers.IO) {
-            try {
+        try {
+            withContext(Dispatchers.IO) {
                 val snapshot = db.collection("groups").document(groupId).get().await()
                 val group = snapshot.toObject(Group::class.java)
                 if (group != null) {
@@ -76,7 +77,11 @@ class GroupRepo(context: Context) {
                 } else {
                     Log.e("GroupRepo", "Firestore group not found!")
                 }
-            } catch (e: Exception) {
+            }
+        } catch (e: Exception) {
+            if (e is kotlinx.coroutines.CancellationException) {
+                Log.d("GroupRepo", "Firestore fetch cancelled due to navigation/lifecycle change")
+            } else {
                 Log.e("GroupRepo", "Error fetching group from Firestore", e)
             }
         }

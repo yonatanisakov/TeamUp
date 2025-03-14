@@ -7,6 +7,7 @@ import android.widget.*
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
+import androidx.navigation.NavOptions
 import androidx.navigation.fragment.findNavController
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.imageview.ShapeableImageView
@@ -16,8 +17,8 @@ import com.idz.teamup.viewmodel.AuthViewModel
 import com.squareup.picasso.Picasso
 
 class RegisterFragment : Fragment(R.layout.fragment_register) {
-
     private val authViewModel: AuthViewModel by viewModels()
+
     private lateinit var fullNameInput: TextInputEditText
     private lateinit var emailInput: TextInputEditText
     private lateinit var passwordInput: TextInputEditText
@@ -33,6 +34,12 @@ class RegisterFragment : Fragment(R.layout.fragment_register) {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
+        setupUI(view)
+        observeViewModel()
+        setupListeners()
+    }
+
+    private fun setupUI(view: View) {
         fullNameInput = view.findViewById(R.id.fullNameRegister)
         emailInput = view.findViewById(R.id.emailRegister)
         passwordInput = view.findViewById(R.id.passwordRegister)
@@ -41,40 +48,55 @@ class RegisterFragment : Fragment(R.layout.fragment_register) {
         loadingOverlay = view.findViewById(R.id.loadingOverlay)
         profileImageView = view.findViewById(R.id.profileImageView)
         selectImageButton = view.findViewById(R.id.selectImageButton)
+    }
+    private fun observeViewModel() {
+        authViewModel.isLoading.observe(viewLifecycleOwner) { isLoading ->
+            loadingOverlay.visibility = if (isLoading) View.VISIBLE else View.GONE
+            registerButton.isEnabled = !isLoading
+            selectImageButton.isEnabled = !isLoading
+        }
 
+        authViewModel.authResult.observe(viewLifecycleOwner) { result ->
+            if (result.first) {
+                Toast.makeText(requireContext(), "Registration Successful!", Toast.LENGTH_SHORT).show()
+                findNavController().navigate(
+                    R.id.action_register_to_login,
+                    null,
+                    NavOptions.Builder()
+                        .setPopUpTo(R.id.registerFragment, true)
+                        .build()
+                )
+            } else {
+                Toast.makeText(requireContext(), "Registration Failed: ${result.second}", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+    private fun setupListeners() {
         selectImageButton.setOnClickListener {
             pickImage.launch("image/*")
         }
 
         loginNow.setOnClickListener {
-            findNavController().navigate(R.id.action_register_to_login)
-        }
-
-        authViewModel.authResult.observe(viewLifecycleOwner) { result ->
-            loadingOverlay.visibility = View.GONE
-            registerButton.isEnabled = true
-
-            if (result.first) {
-                Toast.makeText(requireContext(), "Registration Successful!", Toast.LENGTH_SHORT).show()
-                findNavController().navigate(R.id.action_register_to_login)
-            } else {
-                Toast.makeText(requireContext(), "Registration Failed: ${result.second}", Toast.LENGTH_SHORT).show()
-            }
+            findNavController().navigate(
+                R.id.action_register_to_login,
+                null,
+                NavOptions.Builder()
+                    .setPopUpTo(R.id.registerFragment, true)
+                    .build()
+            )
         }
 
         registerButton.setOnClickListener {
             val fullName = fullNameInput.text.toString().trim()
             val email = emailInput.text.toString().trim()
             val password = passwordInput.text.toString().trim()
-            if (fullName.isEmpty() ||email.isEmpty() || password.isEmpty() || password.length < 6) {
+
+            if (fullName.isEmpty() || email.isEmpty() || password.isEmpty() || password.length < 6) {
                 Toast.makeText(requireContext(), "Enter valid name, email, and password (6+ chars)", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
 
-            loadingOverlay.visibility = View.VISIBLE
-            registerButton.isEnabled = false
             authViewModel.register(fullName, email, password, profileImageUri)
-
         }
     }
     private val pickImage = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->

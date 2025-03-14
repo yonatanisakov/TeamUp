@@ -2,6 +2,7 @@ package com.idz.teamup.ui
 
 import android.net.Uri
 import android.os.Bundle
+import android.util.Log
 import android.view.View
 import android.widget.FrameLayout
 import android.widget.ImageView
@@ -115,13 +116,27 @@ class EditGroupFragment : Fragment(R.layout.fragment_edit_group) {
 
 
         viewModel.updateGroupDetails(args.groupId, newName, newDesc, newImageUri) { success ->
-            requireActivity().runOnUiThread {
-                if (success) {
-                    Toast.makeText(requireContext(), "Group updated successfully!", Toast.LENGTH_SHORT).show()
-                    findNavController().navigateUp()
-                } else {
-                    Toast.makeText(requireContext(), "Update failed! Please try again.", Toast.LENGTH_SHORT).show()
+            try {
+                if (isAdded && activity != null) {
+                    requireActivity().runOnUiThread {
+                        if (success) {
+                            Toast.makeText(
+                                requireContext(),
+                                "Group updated successfully!",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                            findNavController().navigateUp()
+                        } else {
+                            Toast.makeText(
+                                requireContext(),
+                                "Update failed! Please try again.",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                    }
                 }
+            }catch(e: Exception){
+                Log.e("EditGroupFragment", "Fragment not attached when completing update operation", e)
             }
         }
     }

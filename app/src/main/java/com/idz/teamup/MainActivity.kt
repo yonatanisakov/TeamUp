@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.navigation.NavController
+import androidx.navigation.NavOptions
 import androidx.navigation.fragment.NavHostFragment
 import androidx.navigation.ui.setupWithNavController
 import com.google.android.material.bottomnavigation.BottomNavigationView
@@ -37,11 +38,19 @@ class MainActivity : AppCompatActivity() {
         }
 
         val auth = FirebaseAuth.getInstance()
-        if (auth.currentUser == null && navController.currentDestination?.id != R.id.loginFragment) {
-            navController.navigate(R.id.loginFragment)
-        } else if (auth.currentUser != null && (navController.currentDestination?.id == R.id.loginFragment ||
-                    navController.currentDestination?.id == R.id.registerFragment)) {
-            navController.navigate(R.id.action_loginFragment_to_homeFragment)
+        if (auth.currentUser == null) {
+            val navOptions = NavOptions.Builder()
+                .setPopUpTo(R.id.nav_graph, true)
+                .build()
+            navController.navigate(R.id.loginFragment, null, navOptions)
+        } else {
+            if (navController.currentDestination?.id == R.id.loginFragment ||
+                navController.currentDestination?.id == R.id.registerFragment) {
+                val navOptions = NavOptions.Builder()
+                    .setPopUpTo(R.id.nav_graph, true)
+                    .build()
+                navController.navigate(R.id.homeFragment, null, navOptions)
+            }
         }
     }
 
