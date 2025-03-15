@@ -12,11 +12,12 @@ data class Group(
     var createdBy: String = "",
     var imageUrl: String = "",
     val members: List<String> = listOf(),
-    val weather: String = ""
+    val weather: String = "",
+    val maxParticipants: Int = 0
 ) {
     fun toGroupEntity(): GroupEntity {
         return GroupEntity(
-            groupId, name, description, activityType, dateTime, location, createdBy, imageUrl, members, weather
+            groupId, name, description, activityType, dateTime, location, createdBy, imageUrl, members, weather, maxParticipants
         )
     }
 }

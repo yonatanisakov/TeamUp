@@ -5,6 +5,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
+import androidx.core.content.ContextCompat
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.button.MaterialButton
 import com.idz.teamup.R
@@ -24,6 +25,7 @@ class GroupAdapter(
         val groupAdapterImageView: ImageView = view.findViewById(R.id.groupAdapterImageView)
         val groupLocation: TextView = view.findViewById(R.id.groupLocation)
         val viewGroupButton: MaterialButton = view.findViewById(R.id.viewGroupButton)
+        val groupCapacity: TextView = view.findViewById(R.id.groupCapacity)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): GroupViewHolder {
@@ -50,7 +52,24 @@ class GroupAdapter(
         } else {
             holder.groupAdapterImageView.setImageResource(R.drawable.default_group_image)
         }
+        // Add capacity display
+        if (group.maxParticipants > 0) {
+            val capacityText = "Members: ${group.members.size}/${group.maxParticipants}"
+            holder.groupCapacity.text = capacityText
 
+            // Change text color for nearly full groups
+            if (group.members.size >= group.maxParticipants * 0.9) {
+                holder.groupCapacity.setTextColor(
+                    ContextCompat.getColor(holder.itemView.context, R.color.error)
+                )
+            } else {
+                holder.groupCapacity.setTextColor(
+                    ContextCompat.getColor(holder.itemView.context, R.color.dark_gray)
+                )
+            }
+        } else {
+            holder.groupCapacity.text = "Members: ${group.members.size} (unlimited)"
+        }
         holder.itemView.setOnClickListener {
             onItemClick(group)
         }

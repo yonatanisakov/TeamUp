@@ -98,9 +98,14 @@ class GroupRepo(context: Context) {
                     val group = snapshot.toObject(Group::class.java) ?: return@runTransaction
 
                     val updatedMembers = group.members.toMutableList()
+
                     if (updatedMembers.contains(userEmail)) {
                         updatedMembers.remove(userEmail)
                     } else {
+                        if (group.maxParticipants > 0 && group.members.size >= group.maxParticipants) {
+                            // Group is full - throw exception to abort transaction
+                            throw Exception("Group is at full capacity")
+                        }
                         updatedMembers.add(userEmail)
                     }
 
@@ -114,7 +119,11 @@ class GroupRepo(context: Context) {
                 }
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
-                    Log.e("GroupRepo", "Error updating membership: ${e.message}", e)
+                    if (e.message?.contains("full capacity") == true) {
+                        Log.e("GroupRepo", "User attempted to join full group")
+                    } else {
+                        Log.e("GroupRepo", "Error updating membership: ${e.message}", e)
+                    }
                     onComplete(false)
                 }
             }

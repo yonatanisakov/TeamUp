@@ -103,6 +103,29 @@
                     android:textColor="@color/dark_gray"
                     tools:text="Location: Central Park" />
             </LinearLayout>
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:orientation="horizontal">
+
+                <ImageView
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
+                    android:layout_gravity="center_vertical"
+                    android:src="@drawable/ic_person"
+                    app:tint="@color/dark_gray" />
+
+                <TextView
+                    android:id="@+id/groupCapacity"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center_vertical"
+                    android:layout_marginStart="4dp"
+                    android:textAppearance="?attr/textAppearanceBodyMedium"
+                    android:textColor="@color/dark_gray"
+                    tools:text="Members: 7/10" />
+            </LinearLayout>
 
             <View
                 android:layout_width="match_parent"
@@ -144,6 +167,7 @@
                     app:icon="@drawable/ic_arrow_forward"
                     app:iconTint="@color/primary" />
             </LinearLayout>
+
         </LinearLayout>
     </LinearLayout>
 </com.google.android.material.card.MaterialCardView>

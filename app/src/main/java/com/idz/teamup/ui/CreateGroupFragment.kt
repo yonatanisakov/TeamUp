@@ -42,7 +42,7 @@ class CreateGroupFragment : Fragment(R.layout.fragment_create_group) {
     private lateinit var createGroupImageView: ImageView
     private lateinit var loadingOverlay: FrameLayout
     private lateinit var pickImageButton: View
-
+    private lateinit var maxParticipantsInput: TextInputEditText
     private var selectedDateTime: String = ""
     private lateinit var cityAdapter: ArrayAdapter<String>
     private val cities = mutableListOf<String>()
@@ -82,6 +82,8 @@ class CreateGroupFragment : Fragment(R.layout.fragment_create_group) {
         loadingOverlay = view.findViewById(R.id.loadingOverlay)
         pickImageButton = view.findViewById(R.id.pickImageButton)
         cityInput = view.findViewById(R.id.groupLocation)
+        maxParticipantsInput = view.findViewById(R.id.maxParticipantsInput)
+
         cityInput.threshold = 2
 
         val activityTypes = listOf("Soccer", "Basketball", "Yoga", "Running", "Hiking", "Cycling", "Swimming", "Book Club", "Study Group", "Gaming")
@@ -147,6 +149,7 @@ class CreateGroupFragment : Fragment(R.layout.fragment_create_group) {
         val description = descriptionInput.text.toString().trim()
         val activityType = activityTypeDropdown.text.toString().trim()
         val location = cityInput.text.toString().trim()
+        val maxParticipants = maxParticipantsInput.text.toString().trim().toIntOrNull() ?: 0
 
         if (name.isEmpty() || description.isEmpty() || selectedDateTime.isEmpty() || location.isEmpty() || activityType.isEmpty()) {
             Toast.makeText(requireContext(), "Please fill all fields", Toast.LENGTH_SHORT).show()
@@ -164,7 +167,9 @@ class CreateGroupFragment : Fragment(R.layout.fragment_create_group) {
             description = description,
             activityType = activityType,
             dateTime = selectedDateTime,
-            imageUrl = imageUri?.toString() ?: ""
+            imageUrl = imageUri?.toString() ?: "",
+            maxParticipants = maxParticipants
+
         )
 
         groupViewModel.createGroup(group) { success, groupId ->

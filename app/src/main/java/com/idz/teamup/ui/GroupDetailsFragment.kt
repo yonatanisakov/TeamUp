@@ -1,5 +1,6 @@
 package com.idz.teamup.ui
 
+import android.content.res.ColorStateList
 import android.os.Bundle
 import android.util.Log
 import android.view.View
@@ -7,10 +8,12 @@ import android.widget.Button
 import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
+import android.widget.ProgressBar
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.widget.Toolbar
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.navArgs
@@ -47,6 +50,8 @@ class GroupDetailsFragment : Fragment(R.layout.fragment_group_details) {
     private lateinit var ownerActionsContainer: LinearLayout
     private lateinit var loadingOverlay: FrameLayout
     private lateinit var memberAdapter: MemberAdapter
+    private lateinit var participantCountText: TextView
+    private lateinit var capacityProgressBar: ProgressBar
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -78,6 +83,8 @@ class GroupDetailsFragment : Fragment(R.layout.fragment_group_details) {
         deleteGroupButton = view.findViewById(R.id.deleteGroupButton)
         ownerActionsContainer = view.findViewById(R.id.ownerActionsContainer)
         loadingOverlay = view.findViewById(R.id.loadingOverlay)
+        participantCountText = view.findViewById(R.id.participantCountText)
+        capacityProgressBar = view.findViewById(R.id.capacityProgressBar)
 
         membersRecyclerView.layoutManager = LinearLayoutManager(requireContext())
         memberAdapter = MemberAdapter(emptyList())
@@ -116,6 +123,8 @@ class GroupDetailsFragment : Fragment(R.layout.fragment_group_details) {
 
         private fun updateGroupUI(group: Group) {
             collapsingToolbar.title = group.name
+            val memberCount = group.members.size
+            val maxCount = group.maxParticipants
 
             if (group.imageUrl.isNotEmpty()) {
                 Picasso.get()
@@ -127,6 +136,30 @@ class GroupDetailsFragment : Fragment(R.layout.fragment_group_details) {
                 groupDetailsImageView.setImageResource(R.drawable.default_group_image)
             }
 
+            if (maxCount > 0) {
+                // Limited capacity
+                participantCountText.text = "$memberCount/$maxCount"
+
+                // Update progress bar
+                val capacityPercentage = (memberCount.toFloat() / maxCount.toFloat() * 100).toInt()
+                capacityProgressBar.progress = capacityPercentage
+                capacityProgressBar.visibility = View.VISIBLE
+
+                // Set color based on capacity
+                when {
+                    capacityPercentage >= 90 -> capacityProgressBar.progressTintList =
+                        ColorStateList.valueOf(ContextCompat.getColor(requireContext(), R.color.error))
+                    capacityPercentage >= 75 -> capacityProgressBar.progressTintList =
+                        ColorStateList.valueOf(ContextCompat.getColor(requireContext(), R.color.warning))
+                    else -> capacityProgressBar.progressTintList =
+                        ColorStateList.valueOf(ContextCompat.getColor(requireContext(), R.color.primary))
+                }
+            } else {
+                // Unlimited capacity
+                participantCountText.text = "$memberCount (unlimited)"
+                capacityProgressBar.visibility = View.GONE
+            }
+
             groupActivityDetails.text = group.activityType
             groupCreatorDetails.text = "Created by: ${group.createdBy}"
             groupDateDetails.text = group.dateTime
@@ -134,6 +167,12 @@ class GroupDetailsFragment : Fragment(R.layout.fragment_group_details) {
             groupDescriptionDetails.text = group.description
 
             joinLeaveButton.text = if (viewModel.isUserMember()) "Leave Group" else "Join Group"
+            joinLeaveButton.isEnabled =
+                !viewModel.isUserMember() && (maxCount == 0 || memberCount < maxCount)
+            if (maxCount > 0 && memberCount >= maxCount && !viewModel.isUserMember()) {
+                joinLeaveButton.text = "Group Full"
+                joinLeaveButton.isEnabled = false
+            }
 
             ownerActionsContainer.visibility = if (viewModel.isUserCreator()) View.VISIBLE else View.GONE
     }

@@ -159,6 +159,17 @@ class GroupDetailsViewModel(application: Application) : AndroidViewModel(applica
     fun toggleGroupMembership(onComplete: (Boolean) -> Unit) {
         _isLoading.value = true
         val groupId = _group.value?.groupId ?: return
+        val group = _group.value ?: return
+
+        // Special handling for trying to join a full group
+        if (!isUserMember() &&
+            group.maxParticipants > 0 &&
+            group.members.size >= group.maxParticipants) {
+            _isLoading.postValue(false)
+            onComplete(false)
+            return
+        }
+
         viewModelScope.launch {
             try {
                 repo.toggleGroupMembership(groupId) { success ->
