@@ -10,7 +10,11 @@ import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.button.MaterialButton
 import com.idz.teamup.R
 import com.idz.teamup.local.entity.GroupEntity
+import com.idz.teamup.service.DateService
 import com.squareup.picasso.Picasso
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Locale
 
 class GroupAdapter(
     groups: List<GroupEntity>,
@@ -26,6 +30,7 @@ class GroupAdapter(
         val groupLocation: TextView = view.findViewById(R.id.groupLocation)
         val viewGroupButton: MaterialButton = view.findViewById(R.id.viewGroupButton)
         val groupCapacity: TextView = view.findViewById(R.id.groupCapacity)
+        val pastEventBadge: TextView = view.findViewById(R.id.pastEventBadge)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): GroupViewHolder {
@@ -41,6 +46,7 @@ class GroupAdapter(
         holder.groupDate.text = "Date: ${group.dateTime}"
         holder.creatorName.text = "Created by: ${group.createdBy}"
         holder.groupLocation.text = "Location: ${group.location}"
+        val isEventPast = DateService.isPastEvent(group.dateTime)
 
         if (group.imageUrl.isNotEmpty()) {
             Picasso.get()
@@ -77,5 +83,14 @@ class GroupAdapter(
         holder.viewGroupButton.setOnClickListener {
             onItemClick(group)
         }
+
+        holder.pastEventBadge.visibility = if (isEventPast) View.VISIBLE else View.GONE
+
+        if (isEventPast) {
+            holder.itemView.alpha = 0.7f
+        } else {
+            holder.itemView.alpha = 1.0f
+        }
     }
+
 }

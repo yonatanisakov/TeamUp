@@ -5,6 +5,7 @@ import android.text.TextWatcher
 import android.view.View
 import android.widget.FrameLayout
 import android.widget.LinearLayout
+import android.widget.TextView
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.navigation.fragment.findNavController
@@ -12,6 +13,8 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.google.android.material.button.MaterialButton
+import com.google.android.material.chip.Chip
+import com.google.android.material.chip.ChipGroup
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.textfield.TextInputEditText
 import com.idz.teamup.R
@@ -27,6 +30,11 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
     private lateinit var emptyStateContainer: LinearLayout
     private lateinit var createFirstGroupButton: MaterialButton
     private lateinit var loadingOverlay: FrameLayout
+    private lateinit var filterChipGroup: ChipGroup
+    private lateinit var upcomingChip: Chip
+    private lateinit var pastChip: Chip
+    private lateinit var allChip: Chip
+
     private var scrollPosition = 0
 
 
@@ -49,6 +57,12 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
         emptyStateContainer = view.findViewById(R.id.emptyStateContainer)
         createFirstGroupButton = view.findViewById(R.id.createFirstGroupButton)
         loadingOverlay = view.findViewById(R.id.loadingOverlay)
+        filterChipGroup = view.findViewById(R.id.filterChipGroup)
+        upcomingChip = view.findViewById(R.id.upcomingChip)
+        pastChip = view.findViewById(R.id.pastChip)
+        allChip = view.findViewById(R.id.allChip)
+
+        upcomingChip.isChecked = true
 
         val layoutManager = LinearLayoutManager(requireContext())
         recyclerView.layoutManager = layoutManager
@@ -63,13 +77,21 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
     }
 
     private fun observeViewModel() {
-        groupViewModel.groups.observe(viewLifecycleOwner) { groups ->
+        groupViewModel.filteredGroups.observe(viewLifecycleOwner) { groups ->
             groups?.let {
                 groupAdapter.updateGroups(it)
 
                 if (it.isEmpty()) {
                     emptyStateContainer.visibility = View.VISIBLE
                     recyclerView.visibility = View.GONE
+
+                    val emptyStateText = view?.findViewById<TextView>(R.id.emptyStateText)
+                    emptyStateText?.text = when (groupViewModel.filterMode.value) {
+                        "upcoming" ->  "No upcoming groups found"
+                        "past" ->  "No past groups found"
+                        else ->  "No groups found"
+                    }
+
                 } else {
                     emptyStateContainer.visibility = View.GONE
                     recyclerView.visibility = View.VISIBLE
@@ -120,6 +142,18 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
                 updateEmptyStateVisibility()
             }
         })
+
+        upcomingChip.setOnClickListener {
+            groupViewModel.setFilterMode("upcoming")
+        }
+
+        pastChip.setOnClickListener {
+            groupViewModel.setFilterMode("past")
+        }
+
+        allChip.setOnClickListener {
+            groupViewModel.setFilterMode("all")
+        }
 
         swipeRefreshLayout.setOnRefreshListener {
             scrollPosition = 0

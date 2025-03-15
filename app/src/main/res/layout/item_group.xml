@@ -39,6 +39,20 @@
                 android:textAppearance="?attr/textAppearanceBodySmall"
                 android:textColor="@color/white"
                 tools:text="Basketball" />
+            <TextView
+                android:id="@+id/pastEventBadge"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="top|end"
+                android:layout_margin="12dp"
+                android:background="@drawable/past_event_badge_background"
+                android:paddingHorizontal="10dp"
+                android:paddingVertical="4dp"
+                android:text="Past Event"
+                android:textAppearance="?attr/textAppearanceBodySmall"
+                android:textColor="@color/white"
+                android:visibility="gone"
+                tools:visibility="visible" />
         </FrameLayout>
 
         <!-- Group Details -->

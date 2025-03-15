@@ -26,7 +26,11 @@ import androidx.navigation.fragment.findNavController
 import com.google.android.material.appbar.CollapsingToolbarLayout
 import com.google.android.material.button.MaterialButton
 import com.idz.teamup.model.Group
+import com.idz.teamup.service.DateService
 import com.squareup.picasso.Picasso
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Locale
 
 class GroupDetailsFragment : Fragment(R.layout.fragment_group_details) {
 
@@ -53,6 +57,8 @@ class GroupDetailsFragment : Fragment(R.layout.fragment_group_details) {
     private lateinit var participantCountText: TextView
     private lateinit var capacityProgressBar: ProgressBar
 
+    private var isGroupFull = false
+    private var isEventPast = false
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         setupUI(view)
@@ -115,7 +121,8 @@ class GroupDetailsFragment : Fragment(R.layout.fragment_group_details) {
         }
         viewModel.isLoading.observe(viewLifecycleOwner) { isLoading ->
             loadingOverlay.visibility = if (isLoading) View.VISIBLE else View.GONE
-            joinLeaveButton.isEnabled = !isLoading
+            joinLeaveButton.isEnabled = !isLoading &&
+                    (viewModel.isUserMember() || !isGroupFull ) && !isEventPast
             editGroupButton.isEnabled = !isLoading
             deleteGroupButton.isEnabled = !isLoading
         }
@@ -125,6 +132,8 @@ class GroupDetailsFragment : Fragment(R.layout.fragment_group_details) {
             collapsingToolbar.title = group.name
             val memberCount = group.members.size
             val maxCount = group.maxParticipants
+            isGroupFull = maxCount > 0 && memberCount >= maxCount && !viewModel.isUserMember()
+            isEventPast = DateService.isPastEvent(group.dateTime)
 
             if (group.imageUrl.isNotEmpty()) {
                 Picasso.get()
@@ -149,7 +158,7 @@ class GroupDetailsFragment : Fragment(R.layout.fragment_group_details) {
                 when {
                     capacityPercentage >= 90 -> capacityProgressBar.progressTintList =
                         ColorStateList.valueOf(ContextCompat.getColor(requireContext(), R.color.error))
-                    capacityPercentage >= 75 -> capacityProgressBar.progressTintList =
+                    capacityPercentage >= 50 -> capacityProgressBar.progressTintList =
                         ColorStateList.valueOf(ContextCompat.getColor(requireContext(), R.color.warning))
                     else -> capacityProgressBar.progressTintList =
                         ColorStateList.valueOf(ContextCompat.getColor(requireContext(), R.color.primary))
@@ -166,13 +175,13 @@ class GroupDetailsFragment : Fragment(R.layout.fragment_group_details) {
             groupLocationDetails.text = group.location
             groupDescriptionDetails.text = group.description
 
-            joinLeaveButton.text = if (viewModel.isUserMember()) "Leave Group" else "Join Group"
-            joinLeaveButton.isEnabled =
-                !viewModel.isUserMember() && (maxCount == 0 || memberCount < maxCount)
-            if (maxCount > 0 && memberCount >= maxCount && !viewModel.isUserMember()) {
+            if (isGroupFull)
                 joinLeaveButton.text = "Group Full"
-                joinLeaveButton.isEnabled = false
-            }
+            else if(isEventPast)
+                joinLeaveButton.text = "Past Event"
+            else
+                joinLeaveButton.text = if (viewModel.isUserMember()) "Leave Group" else "Join Group"
+
 
             ownerActionsContainer.visibility = if (viewModel.isUserCreator()) View.VISIBLE else View.GONE
     }

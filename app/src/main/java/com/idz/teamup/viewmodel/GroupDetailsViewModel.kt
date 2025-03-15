@@ -10,12 +10,16 @@ import androidx.lifecycle.viewModelScope
 
 import com.idz.teamup.model.Group
 import com.idz.teamup.repository.GroupRepo
+import com.idz.teamup.service.DateService
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.supervisorScope
 import kotlinx.coroutines.withContext
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Locale
 import kotlin.coroutines.cancellation.CancellationException
 
 class GroupDetailsViewModel(application: Application) : AndroidViewModel(application) {
@@ -52,9 +56,16 @@ class GroupDetailsViewModel(application: Application) : AndroidViewModel(applica
                         repo.fetchGroupDetailsFromFirestore(groupId)
                     } catch (e: Exception) {
                         if (e is CancellationException) {
-                            Log.d("GroupDetailsViewModel", "Fetch cancelled due to lifecycle change")
+                            Log.d(
+                                "GroupDetailsViewModel",
+                                "Fetch cancelled due to lifecycle change"
+                            )
                         } else {
-                            Log.e("GroupDetailsViewModel", "Error loading group details: ${e.message}", e)
+                            Log.e(
+                                "GroupDetailsViewModel",
+                                "Error loading group details: ${e.message}",
+                                e
+                            )
                         }
                     }
                 }
@@ -70,13 +81,13 @@ class GroupDetailsViewModel(application: Application) : AndroidViewModel(applica
     }
 
 
-        fun isUserMember(): Boolean {
-            return group.value?.members?.contains(repo.auth.currentUser?.email) == true
-        }
+    fun isUserMember(): Boolean {
+        return group.value?.members?.contains(repo.auth.currentUser?.email) == true
+    }
 
-        fun isUserCreator(): Boolean {
-            return group.value?.createdBy == repo.auth.currentUser?.email
-        }
+    fun isUserCreator(): Boolean {
+        return group.value?.createdBy == repo.auth.currentUser?.email
+    }
 
 
     fun updateGroupDetails(
@@ -100,7 +111,11 @@ class GroupDetailsViewModel(application: Application) : AndroidViewModel(applica
                             }
                         }
                     } catch (e: Exception) {
-                        Log.e("GroupDetailsViewModel", "Error updating group details: ${e.message}", e)
+                        Log.e(
+                            "GroupDetailsViewModel",
+                            "Error updating group details: ${e.message}",
+                            e
+                        )
                         success = false
                     }
 
@@ -109,16 +124,22 @@ class GroupDetailsViewModel(application: Application) : AndroidViewModel(applica
                             _isLoading.value = false
                             onComplete(success)
                         } catch (e: Exception) {
-                            Log.d("GroupDetailsViewModel", "Could not deliver callback - fragment likely detached")
+                            Log.d(
+                                "GroupDetailsViewModel",
+                                "Could not deliver callback - fragment likely detached"
+                            )
                         }
                     }
                 } catch (e: Exception) {
-                    Log.e("GroupDetailsViewModel", "Unexpected error in update coroutine: ${e.message}", e)
+                    Log.e(
+                        "GroupDetailsViewModel",
+                        "Unexpected error in update coroutine: ${e.message}",
+                        e
+                    )
                 }
             }
         }
     }
-
 
 
     fun deleteGroup(groupId: String, onComplete: (Boolean) -> Unit) {
@@ -136,7 +157,11 @@ class GroupDetailsViewModel(application: Application) : AndroidViewModel(applica
                             }
                         }
                     } catch (e: Exception) {
-                        Log.e("GroupDetailsViewModel", "Error during group deletion: ${e.message}", e)
+                        Log.e(
+                            "GroupDetailsViewModel",
+                            "Error during group deletion: ${e.message}",
+                            e
+                        )
                         success = false
                     }
 
@@ -145,11 +170,18 @@ class GroupDetailsViewModel(application: Application) : AndroidViewModel(applica
                             _isLoading.value = false
                             onComplete(success)
                         } catch (e: Exception) {
-                            Log.d("GroupDetailsViewModel", "Could not deliver callback - fragment likely detached")
+                            Log.d(
+                                "GroupDetailsViewModel",
+                                "Could not deliver callback - fragment likely detached"
+                            )
                         }
                     }
                 } catch (e: Exception) {
-                    Log.e("GroupDetailsViewModel", "Unexpected error in deletion coroutine: ${e.message}", e)
+                    Log.e(
+                        "GroupDetailsViewModel",
+                        "Unexpected error in deletion coroutine: ${e.message}",
+                        e
+                    )
                 }
             }
         }
@@ -161,10 +193,19 @@ class GroupDetailsViewModel(application: Application) : AndroidViewModel(applica
         val groupId = _group.value?.groupId ?: return
         val group = _group.value ?: return
 
+
+        // Check if event is in the past
+        if (DateService.isPastEvent(group.dateTime)) {
+            _isLoading.postValue(false)
+            onComplete(false)
+            return
+        }
+
         // Special handling for trying to join a full group
         if (!isUserMember() &&
             group.maxParticipants > 0 &&
-            group.members.size >= group.maxParticipants) {
+            group.members.size >= group.maxParticipants
+        ) {
             _isLoading.postValue(false)
             onComplete(false)
             return
@@ -179,7 +220,7 @@ class GroupDetailsViewModel(application: Application) : AndroidViewModel(applica
                     }
                     onComplete(success)
                 }
-            }catch (e: Exception) {
+            } catch (e: Exception) {
                 _isLoading.postValue(false)
                 onComplete(false)
                 Log.e("GroupDetailsViewModel", "Error updating membership: ${e.message}", e)
@@ -193,7 +234,11 @@ class GroupDetailsViewModel(application: Application) : AndroidViewModel(applica
             if (!localWeather.isNullOrEmpty()) {
                 _weather.postValue(localWeather)
             } else {
-                WeatherRepo.fetchWeather(city, dateTime, "HJBa6wYcxMgPDR4kOlmaIgzDVAOMbaor") { result ->
+                WeatherRepo.fetchWeather(
+                    city,
+                    dateTime,
+                    "HJBa6wYcxMgPDR4kOlmaIgzDVAOMbaor"
+                ) { result ->
                     _weather.postValue(result)
                     viewModelScope.launch(Dispatchers.IO) {
                         repo.updateWeather(group.value?.groupId ?: return@launch, result)
