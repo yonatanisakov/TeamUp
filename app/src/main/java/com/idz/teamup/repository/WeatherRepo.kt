@@ -1,5 +1,4 @@
-import android.util.Log
-import com.idz.teamup.repository.GeoDBRepo
+import com.idz.teamup.service.WeatherApiService
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.text.SimpleDateFormat

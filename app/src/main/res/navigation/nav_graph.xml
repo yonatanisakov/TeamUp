@@ -8,13 +8,16 @@
     <fragment
         android:id="@+id/loginFragment"
         android:name="com.idz.teamup.ui.LoginFragment"
-        android:label="Login">
+        android:label="Login"
+        tools:layout="@layout/fragment_login">
         <action
             android:id="@+id/action_login_to_register"
             app:destination="@id/registerFragment" />
         <action
             android:id="@+id/action_loginFragment_to_homeFragment"
-            app:destination="@id/homeFragment" />
+            app:destination="@id/homeFragment"
+            app:popUpTo="@id/nav_graph"
+            app:popUpToInclusive="true"/>
     </fragment>
 
     <fragment
@@ -23,7 +26,9 @@
         android:label="Register">
         <action
             android:id="@+id/action_register_to_login"
-            app:destination="@id/loginFragment" />
+            app:destination="@id/loginFragment"
+            app:popUpTo="@id/registerFragment"
+            app:popUpToInclusive="true" />
     </fragment>
     <fragment
         android:id="@+id/homeFragment"
@@ -47,7 +52,13 @@
         android:id="@+id/createGroupFragment"
         android:name="com.idz.teamup.ui.CreateGroupFragment"
         android:label="Create Group"
-        tools:layout="@layout/fragment_create_group" />
+        tools:layout="@layout/fragment_create_group" >
+        <action
+            android:id="@+id/action_createGroupFragment_to_groupDetailsFragment"
+            app:destination="@id/groupDetailsFragment"
+            app:popUpTo="@id/homeFragment"
+            app:popUpToInclusive="false" />
+    </fragment>
     <fragment
         android:id="@+id/groupDetailsFragment"
         android:name="com.idz.teamup.ui.GroupDetailsFragment"
@@ -69,5 +80,19 @@
         <argument
             android:name="groupId"
             app:argType="string" />
+    </fragment>
+    <fragment
+        android:id="@+id/myGroupsFragment"
+        android:name="com.idz.teamup.ui.MyGroupsFragment"
+        android:label="My Groups">
+        <action
+            android:id="@+id/action_myGroupsFragment_to_groupDetailsFragment"
+            app:destination="@id/groupDetailsFragment" />
+        <action
+            android:id="@+id/action_myGroupsFragment_to_editGroupFragment"
+            app:destination="@id/editGroupFragment" />
+        <action
+            android:id="@+id/action_myGroupsFragment_to_createGroupFragment"
+            app:destination="@id/createGroupFragment" />
     </fragment>
 </navigation>

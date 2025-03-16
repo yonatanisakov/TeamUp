@@ -1,9 +1,9 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
-    id("kotlin-kapt")
     alias(libs.plugins.google.services)
     alias(libs.plugins.safe.args)
+    alias(libs.plugins.ksp)
 }
 
 android {
@@ -51,7 +51,8 @@ dependencies {
     implementation(libs.firebase.auth.ktx)
     implementation(libs.androidx.lifecycle.viewmodel.ktx)
     implementation(libs.androidx.lifecycle.livedata.ktx)
-    implementation(libs.material.v1110)
+    implementation(libs.material)
+    implementation(libs.androidx.core.splashscreen)
     implementation(libs.firebase.firestore.ktx)
     implementation(libs.firebase.storage.ktx)
     implementation(libs.picasso)
@@ -62,8 +63,11 @@ dependencies {
     implementation(libs.firebase.appcheck.playintegrity)
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
+    implementation(libs.androidx.swiperefreshlayout)
+    ksp(libs.androidx.room.compiler)
     testImplementation(libs.junit)
-    kapt(libs.androidx.room.compiler)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
+    implementation(libs.lottie)
+
 }

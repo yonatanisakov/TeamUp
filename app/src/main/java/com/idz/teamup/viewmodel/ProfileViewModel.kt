@@ -5,78 +5,82 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.storage.FirebaseStorage
 import com.idz.teamup.model.User
 import com.idz.teamup.repository.UserRepo
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.withContext
 
 class ProfileViewModel : ViewModel() {
     private val userRepository = UserRepo()
-    private val storage = FirebaseStorage.getInstance()
-    private val auth = FirebaseAuth.getInstance()
 
     private val _user = MutableLiveData<User?>()
     val user: LiveData<User?> get() = _user
 
+    private val _isLoading = MutableLiveData<Boolean>()
+    val isLoading: LiveData<Boolean> get() = _isLoading
+
     fun loadUserProfile() {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch {
+            _isLoading.value = true
             val fetchedUser = userRepository.getCurrentUser()
             _user.postValue(fetchedUser)
+            _isLoading.value = false
         }
     }
 
-    fun updateUserProfile(user: User, onComplete: (Boolean) -> Unit) {
-        viewModelScope.launch(Dispatchers.IO) {
-            val success = userRepository.updateUserProfile(user)
-            if (success) _user.postValue(user)
-            onComplete(success)
-        }
-    }
-
-    fun uploadProfilePicture(imageUri: Uri, onComplete: (String?) -> Unit) {
-        viewModelScope.launch(Dispatchers.IO) {
-            val userId = auth.currentUser?.uid
-            if (userId == null) {
-                onComplete(null)
-                return@launch
-            }
-
-            val imageRef = storage.reference.child("profile_images/$userId.jpg")
+    fun updateUserWithImage(updatedUser: User, imageUri: Uri, onComplete: (Boolean) -> Unit) {
+        viewModelScope.launch {
+            _isLoading.value = true
             try {
-                imageRef.putFile(imageUri).await()
-                val uri = imageRef.downloadUrl.await()
-                onComplete(uri.toString())
-            } catch (e: Exception) {
-                onComplete(null)
-            }
-        }
-    }
-
-    fun deleteProfilePicture(onComplete: (Boolean) -> Unit) {
-        viewModelScope.launch(Dispatchers.IO) {
-            val userId = auth.currentUser?.uid ?: return@launch
-            val imageRef = storage.reference.child("profile_images/$userId.jpg")
-
-            try {
-                imageRef.delete().await()
-                val updatedUser = _user.value?.copy(profileImageUrl = "")
-                if (updatedUser != null) {
-                    val success = userRepository.updateUserProfile(updatedUser)
-                    _user.postValue(updatedUser)
-                    onComplete(success)
+                val imageUrl = userRepository.uploadProfilePicture(imageUri)
+                if (imageUrl != null) {
+                    val userWithImage = updatedUser.copy(profileImageUrl = imageUrl)
+                    val success = userRepository.updateUserProfile(userWithImage)
+                    if (success) _user.value = userWithImage
+                    withContext(Dispatchers.Main) { onComplete(success) }
                 } else {
-                    onComplete(false)
+                    withContext(Dispatchers.Main) { onComplete(false) }
                 }
-            } catch (e: Exception) {
-                onComplete(false)
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+
+    fun updateUserWithoutImage(updatedUser: User, onComplete: (Boolean) -> Unit) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            try {
+                val success = userRepository.updateUserProfile(updatedUser)
+                if (success) _user.value = updatedUser
+                withContext(Dispatchers.Main) { onComplete(success) }
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+
+    fun deleteProfilePictureAndUpdate(updatedUser: User, onComplete: (Boolean) -> Unit) {
+        viewModelScope.launch {
+            _isLoading.value = true
+            try {
+                val deleteSuccess = userRepository.deleteProfilePicture()
+                if (deleteSuccess) {
+                    val userWithoutImage = updatedUser.copy(profileImageUrl = "")
+                    val updateSuccess = userRepository.updateUserProfile(userWithoutImage)
+                    if (updateSuccess) _user.value = userWithoutImage
+                    withContext(Dispatchers.Main) { onComplete(updateSuccess) }
+                } else {
+                    withContext(Dispatchers.Main) { onComplete(false) }
+                }
+            } finally {
+                _isLoading.value = false
             }
         }
     }
 
     fun logout() {
-        auth.signOut()
+        userRepository.logout()
     }
 }

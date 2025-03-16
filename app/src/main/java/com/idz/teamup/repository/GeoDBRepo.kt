@@ -1,5 +1,6 @@
 package com.idz.teamup.repository
 
+import android.util.Log
 import com.idz.teamup.model.CityResponse
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
@@ -34,6 +35,8 @@ object GeoDBRepo {
 
             response.data.map { it.city }
         } catch (e: Exception) {
+            Log.e("TeamUp", "Error in ${this::class.java.simpleName}: ${e.message}", e)
+
             emptyList()
         }
     }
