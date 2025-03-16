@@ -172,6 +172,44 @@
                                 android:textAppearance="?attr/textAppearanceBodyMedium"
                                 tools:text="Weather: Clear Sky ☀️, 22°C" />
                         </LinearLayout>
+                        <LinearLayout
+                            android:id="@+id/registrationContainer"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="12dp"
+                            android:background="@drawable/registration_deadline_background"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal"
+                            android:padding="12dp">
+
+                            <ImageView
+                                android:layout_width="24dp"
+                                android:layout_height="24dp"
+                                android:src="@drawable/ic_time"
+                                app:tint="@color/primary" />
+
+                            <LinearLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="12dp"
+                                android:orientation="vertical">
+
+                                <TextView
+                                    android:id="@+id/registrationStatusText"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:textAppearance="?attr/textAppearanceBodyMedium"
+                                    android:textStyle="bold"
+                                    tools:text="Registration: Open" />
+
+                                <TextView
+                                    android:id="@+id/registrationDeadlineText"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:textAppearance="?attr/textAppearanceBodySmall"
+                                    tools:text="Closes in 2 days" />
+                            </LinearLayout>
+                        </LinearLayout>
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 

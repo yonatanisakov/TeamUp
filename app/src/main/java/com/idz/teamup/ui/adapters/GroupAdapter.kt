@@ -68,7 +68,13 @@ class GroupAdapter(
                 holder.groupCapacity.setTextColor(
                     ContextCompat.getColor(holder.itemView.context, R.color.error)
                 )
-            } else {
+            }
+            else if(group.members.size >= group.maxParticipants * 0.5){
+                holder.groupCapacity.setTextColor(
+                    ContextCompat.getColor(holder.itemView.context, R.color.warning)
+                )
+            }
+            else {
                 holder.groupCapacity.setTextColor(
                     ContextCompat.getColor(holder.itemView.context, R.color.dark_gray)
                 )

@@ -9,7 +9,7 @@ import androidx.room.TypeConverters
 import com.idz.teamup.local.dao.GroupDao
 import com.idz.teamup.local.entity.GroupEntity
 
-@Database(entities = [GroupEntity::class], version = 7, exportSchema = false)
+@Database(entities = [GroupEntity::class], version = 8, exportSchema = false)
 @TypeConverters(Converters::class)
 abstract class GroupDatabase : RoomDatabase() {
 

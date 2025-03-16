@@ -200,8 +200,15 @@ class GroupDetailsViewModel(application: Application) : AndroidViewModel(applica
             onComplete(false)
             return
         }
-
-        // Special handling for trying to join a full group
+        // Check registration deadline for joining (not for leaving)
+        if (!isUserMember() &&
+            group.registrationDeadline.isNotBlank() &&
+            !DateService.isRegistrationOpen(group.registrationDeadline)) {
+            _isLoading.postValue(false)
+            onComplete(false)
+            return
+        }
+        // Check capacity
         if (!isUserMember() &&
             group.maxParticipants > 0 &&
             group.members.size >= group.maxParticipants

@@ -20,11 +20,13 @@ import com.google.android.material.textfield.TextInputEditText
 import com.idz.teamup.R
 import com.idz.teamup.model.Group
 import com.idz.teamup.repository.GeoDBRepo
+import com.idz.teamup.service.DateService
 import com.idz.teamup.viewmodel.GroupViewModel
 import com.squareup.picasso.Picasso
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
 import java.util.*
 
 
@@ -44,6 +46,10 @@ class CreateGroupFragment : Fragment(R.layout.fragment_create_group) {
     private lateinit var pickImageButton: View
     private lateinit var maxParticipantsInput: TextInputEditText
     private var selectedDateTime: String = ""
+    private lateinit var registrationDeadlineSpinner: AutoCompleteTextView
+    private lateinit var registrationDeadlinePreview: TextView
+    private var selectedRegistrationDeadline: String = ""
+    private var eventDateTime: Date? = null
     private lateinit var cityAdapter: ArrayAdapter<String>
     private val cities = mutableListOf<String>()
     private val validCities = mutableSetOf<String>()
@@ -83,12 +89,19 @@ class CreateGroupFragment : Fragment(R.layout.fragment_create_group) {
         pickImageButton = view.findViewById(R.id.pickImageButton)
         cityInput = view.findViewById(R.id.groupLocation)
         maxParticipantsInput = view.findViewById(R.id.maxParticipantsInput)
+        registrationDeadlineSpinner = view.findViewById(R.id.registrationDeadlineSpinner)
+        registrationDeadlinePreview = view.findViewById(R.id.registrationDeadlinePreview)
 
         cityInput.threshold = 2
 
         val activityTypes = listOf("Soccer", "Basketball", "Yoga", "Running", "Hiking", "Cycling", "Swimming", "Book Club", "Study Group", "Gaming")
         val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, activityTypes)
         activityTypeDropdown.setAdapter(adapter)
+
+        setupDeadlineOptions()
+        view.findViewById<View>(R.id.registrationDeadlineContainer).visibility = View.GONE
+
+
     }
 
     private fun observeViewModel() {
@@ -113,6 +126,57 @@ class CreateGroupFragment : Fragment(R.layout.fragment_create_group) {
 
         createGroupButton.setOnClickListener {
             createGroup()
+        }
+        registrationDeadlineSpinner.setOnItemClickListener { _, _, position, _ ->
+            if (selectedDateTime.isEmpty()) {
+                Toast.makeText(requireContext(), "Please select event date first", Toast.LENGTH_SHORT).show()
+                registrationDeadlineSpinner.setText("")
+                return@setOnItemClickListener
+            }
+            val selection = registrationDeadlineSpinner.text.toString()
+
+            if (selection == "No deadline") {
+                selectedRegistrationDeadline = ""
+                registrationDeadlinePreview.visibility = View.GONE
+                return@setOnItemClickListener
+            }
+
+            // Parse event date
+            val dateFormat = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
+            try {
+                eventDateTime = dateFormat.parse(selectedDateTime)
+
+                // Calculate deadline based on selection
+                val deadlineCal = Calendar.getInstance()
+                deadlineCal.time = eventDateTime ?: return@setOnItemClickListener
+
+                when (selection) {
+                    "1 hour before event" -> deadlineCal.add(Calendar.HOUR, -1)
+                    "3 hours before event" -> deadlineCal.add(Calendar.HOUR, -3)
+                    "6 hours before event" -> deadlineCal.add(Calendar.HOUR, -6)
+                    "12 hours before event" -> deadlineCal.add(Calendar.HOUR, -12)
+                    "1 day before event" -> deadlineCal.add(Calendar.DAY_OF_MONTH, -1)
+                    "2 days before event" -> deadlineCal.add(Calendar.DAY_OF_MONTH, -2)
+                    "1 week before event" -> deadlineCal.add(Calendar.DAY_OF_MONTH, -7)
+                }
+
+                // Check if deadline is in the past
+                val currentCal = Calendar.getInstance()
+                if (deadlineCal.before(currentCal)) {
+                    Toast.makeText(requireContext(), "Deadline would be in the past. Choose another option or a later event date.", Toast.LENGTH_LONG).show()
+                    registrationDeadlineSpinner.setText("")
+                    return@setOnItemClickListener
+                }
+
+                // Set deadline and show preview
+                selectedRegistrationDeadline = dateFormat.format(deadlineCal.time)
+                registrationDeadlinePreview.text = "Registration will close on: $selectedRegistrationDeadline"
+                registrationDeadlinePreview.visibility = View.VISIBLE
+
+            } catch (e: Exception) {
+                Log.e("CreateGroupFragment", "Error calculating deadline: ${e.message}", e)
+                Toast.makeText(requireContext(), "Error calculating deadline", Toast.LENGTH_SHORT).show()
+            }
         }
 
         cityInput.setOnItemClickListener { parent, _, position, _ ->
@@ -160,7 +224,10 @@ class CreateGroupFragment : Fragment(R.layout.fragment_create_group) {
             Toast.makeText(requireContext(), "Please select a valid city from the list", Toast.LENGTH_SHORT).show()
             return
         }
-
+        if (!DateService.isFutureEvent(selectedDateTime)) {
+            Toast.makeText(requireContext(), "Cannot create events in the past", Toast.LENGTH_SHORT).show()
+            return
+        }
         val group = Group(
             name = name,
             location = location,
@@ -168,8 +235,8 @@ class CreateGroupFragment : Fragment(R.layout.fragment_create_group) {
             activityType = activityType,
             dateTime = selectedDateTime,
             imageUrl = imageUri?.toString() ?: "",
-            maxParticipants = maxParticipants
-
+            maxParticipants = maxParticipants,
+            registrationDeadline = selectedRegistrationDeadline
         )
 
         groupViewModel.createGroup(group) { success, groupId ->
@@ -228,14 +295,43 @@ class CreateGroupFragment : Fragment(R.layout.fragment_create_group) {
 
     private fun showDateTimePicker() {
         val calendar = Calendar.getInstance()
+        val currentDate = calendar.time
 
         val datePicker = DatePickerDialog(requireContext(), { _, year, month, dayOfMonth ->
+            val selectedCal = Calendar.getInstance()
+            selectedCal.set(year, month, dayOfMonth)
+            if (selectedCal.time.before(currentDate) && selectedCal.get(Calendar.DAY_OF_YEAR) != calendar.get(Calendar.DAY_OF_YEAR)) {
+                Toast.makeText(requireContext(), "Cannot create events in the past", Toast.LENGTH_SHORT).show()
+                return@DatePickerDialog
+            }
+
             val selectedDate = "$dayOfMonth/${month + 1}/$year"
 
             val timePicker = TimePickerDialog(requireContext(), { _, hourOfDay, minute ->
+                // Check for past time if it's today
+                if (selectedCal.get(Calendar.YEAR) == calendar.get(Calendar.YEAR) &&
+                    selectedCal.get(Calendar.DAY_OF_YEAR) == calendar.get(Calendar.DAY_OF_YEAR)) {
+
+                    val currentHour = calendar.get(Calendar.HOUR_OF_DAY)
+                    val currentMinute = calendar.get(Calendar.MINUTE)
+
+                    if (hourOfDay < currentHour || (hourOfDay == currentHour && minute <= currentMinute)) {
+                        Toast.makeText(requireContext(), "Cannot create events in the past", Toast.LENGTH_SHORT).show()
+                        return@TimePickerDialog
+                    }
+                }
+
                 val selectedTime = String.format(Locale.getDefault(), "%02d:%02d", hourOfDay, minute)
                 selectedDateTime = "$selectedDate $selectedTime"
                 dateTimePickerButton.setText(selectedDateTime)
+
+                // Show the registration deadline options when a date is selected
+                view?.findViewById<View>(R.id.registrationDeadlineContainer)?.visibility = View.VISIBLE
+
+                // Reset any previous selection
+                selectedRegistrationDeadline = ""
+                registrationDeadlineSpinner.setText("")
+                registrationDeadlinePreview.visibility = View.GONE
             }, calendar.get(Calendar.HOUR_OF_DAY), calendar.get(Calendar.MINUTE), true)
 
             timePicker.show()
@@ -257,6 +353,21 @@ class CreateGroupFragment : Fragment(R.layout.fragment_create_group) {
         }
 
         dialog.show()
+    }
+    private fun setupDeadlineOptions() {
+        val deadlineOptions = listOf(
+            "No deadline",
+            "1 hour before event",
+            "3 hours before event",
+            "6 hours before event",
+            "12 hours before event",
+            "1 day before event",
+            "2 days before event",
+            "1 week before event"
+        )
+
+        val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_dropdown_item_1line, deadlineOptions)
+        registrationDeadlineSpinner.setAdapter(adapter)
     }
 
 }

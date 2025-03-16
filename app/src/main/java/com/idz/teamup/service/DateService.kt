@@ -43,17 +43,54 @@ object DateService {
     }
 
     /**
-     * Parse a date/time string to Date object
-     * @param dateTimeString The date string in format "dd/MM/yyyy HH:mm"
-     * @return Date object or null if parsing fails
+     * Checks if registration for an event is still open
+     * @param deadlineString The registration deadline in format "dd/MM/yyyy HH:mm"
+     * @return true if registration is still open, false if closed
      */
-    fun parseDate(dateTimeString: String): Date? {
-        return try {
+    fun isRegistrationOpen(deadlineString: String): Boolean {
+        // If no deadline is set, registration is always open
+        if (deadlineString.isBlank()) return true
+
+        try {
             val dateFormat = SimpleDateFormat(DATE_FORMAT_PATTERN, Locale.getDefault())
-            dateFormat.parse(dateTimeString)
+            val deadline = dateFormat.parse(deadlineString) ?: return true
+            val currentDate = Calendar.getInstance().time
+            return currentDate.before(deadline)
         } catch (e: Exception) {
-            Log.e("DateUtils", "Error parsing date: $dateTimeString", e)
-            null
+            Log.e("DateUtils", "Error parsing deadline: $deadlineString", e)
+            return true  // Default to open if parsing fails
+        }
+    }
+
+    /**
+     * Calculates time remaining until deadline in a human-readable format
+     * @param deadlineString The deadline in format "dd/MM/yyyy HH:mm"
+     * @return String with remaining time (e.g., "2 days, 3 hours") or "Closed" if passed
+     */
+    fun getTimeUntilDeadline(deadlineString: String): String {
+        if (deadlineString.isBlank()) return "No deadline"
+
+        try {
+            val dateFormat = SimpleDateFormat(DATE_FORMAT_PATTERN, Locale.getDefault())
+            val deadline = dateFormat.parse(deadlineString) ?: return "Unknown"
+            val currentDate = Calendar.getInstance().time
+
+            if (currentDate.after(deadline)) return "Closed"
+
+            val diffInMillis = deadline.time - currentDate.time
+            val diffInSeconds = diffInMillis / 1000
+
+            if (diffInSeconds < 60) return "Less than a minute"
+            if (diffInSeconds < 3600) return "${diffInSeconds / 60} minutes"
+
+            val hours = diffInSeconds / 3600
+            if (hours < 24) return "$hours hours"
+
+            val days = hours / 24
+            return if (days == 1L) "1 day" else "$days days"
+        } catch (e: Exception) {
+            Log.e("DateUtils", "Error calculating time until deadline: $deadlineString", e)
+            return "Unknown"
         }
     }
 }

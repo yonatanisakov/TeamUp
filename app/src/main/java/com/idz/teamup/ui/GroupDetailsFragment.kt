@@ -56,9 +56,13 @@ class GroupDetailsFragment : Fragment(R.layout.fragment_group_details) {
     private lateinit var memberAdapter: MemberAdapter
     private lateinit var participantCountText: TextView
     private lateinit var capacityProgressBar: ProgressBar
+    private lateinit var registrationContainer: LinearLayout
+    private lateinit var registrationStatusText: TextView
+    private lateinit var registrationDeadlineText: TextView
 
     private var isGroupFull = false
     private var isEventPast = false
+    private var isRegistrationOpen = true
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         setupUI(view)
@@ -91,6 +95,9 @@ class GroupDetailsFragment : Fragment(R.layout.fragment_group_details) {
         loadingOverlay = view.findViewById(R.id.loadingOverlay)
         participantCountText = view.findViewById(R.id.participantCountText)
         capacityProgressBar = view.findViewById(R.id.capacityProgressBar)
+        registrationContainer = view.findViewById(R.id.registrationContainer)
+        registrationStatusText = view.findViewById(R.id.registrationStatusText)
+        registrationDeadlineText = view.findViewById(R.id.registrationDeadlineText)
 
         membersRecyclerView.layoutManager = LinearLayoutManager(requireContext())
         memberAdapter = MemberAdapter(emptyList())
@@ -122,7 +129,7 @@ class GroupDetailsFragment : Fragment(R.layout.fragment_group_details) {
         viewModel.isLoading.observe(viewLifecycleOwner) { isLoading ->
             loadingOverlay.visibility = if (isLoading) View.VISIBLE else View.GONE
             joinLeaveButton.isEnabled = !isLoading &&
-                    (viewModel.isUserMember() || !isGroupFull ) && !isEventPast
+                    (viewModel.isUserMember() || !isGroupFull ) && !isEventPast && (viewModel.isUserMember() || isRegistrationOpen)
             editGroupButton.isEnabled = !isLoading
             deleteGroupButton.isEnabled = !isLoading
         }
@@ -134,6 +141,7 @@ class GroupDetailsFragment : Fragment(R.layout.fragment_group_details) {
             val maxCount = group.maxParticipants
             isGroupFull = maxCount > 0 && memberCount >= maxCount && !viewModel.isUserMember()
             isEventPast = DateService.isPastEvent(group.dateTime)
+            isRegistrationOpen = group.registrationDeadline.isBlank() || DateService.isRegistrationOpen(group.registrationDeadline)
 
             if (group.imageUrl.isNotEmpty()) {
                 Picasso.get()
@@ -169,6 +177,25 @@ class GroupDetailsFragment : Fragment(R.layout.fragment_group_details) {
                 capacityProgressBar.visibility = View.GONE
             }
 
+            if (group.registrationDeadline.isBlank()) {
+                registrationContainer.visibility = View.GONE
+            } else {
+                registrationContainer.visibility = View.VISIBLE
+
+                val isRegistrationOpen = DateService.isRegistrationOpen(group.registrationDeadline)
+                val timeRemaining = DateService.getTimeUntilDeadline(group.registrationDeadline)
+
+                if (isRegistrationOpen) {
+                    registrationStatusText.text = "Registration: Open"
+                    registrationStatusText.setTextColor(ContextCompat.getColor(requireContext(), R.color.success))
+                    registrationDeadlineText.text = "Closes in $timeRemaining"
+                } else {
+                    registrationStatusText.text = "Registration: Closed"
+                    registrationStatusText.setTextColor(ContextCompat.getColor(requireContext(), R.color.error))
+                    registrationDeadlineText.text = "Registration period has ended"
+                }
+            }
+
             groupActivityDetails.text = group.activityType
             groupCreatorDetails.text = "Created by: ${group.createdBy}"
             groupDateDetails.text = group.dateTime
@@ -177,6 +204,8 @@ class GroupDetailsFragment : Fragment(R.layout.fragment_group_details) {
 
             if (isGroupFull)
                 joinLeaveButton.text = "Group Full"
+            else if(!isRegistrationOpen && !viewModel.isUserMember())
+                joinLeaveButton.text = "Registration Closed"
             else if(isEventPast)
                 joinLeaveButton.text = "Past Event"
             else

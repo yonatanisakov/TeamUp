@@ -16,12 +16,13 @@ data class GroupEntity(
     val imageUrl: String,
     val members: List<String>,
     val weather: String="",
-    val maxParticipants: Int = 0
+    val maxParticipants: Int = 0,
+    val registrationDeadline: String = ""
 
 ) {
     fun toGroup(): Group {
         return Group(
-            groupId, name, description, activityType, dateTime, location, createdBy, imageUrl, members,weather,maxParticipants
+            groupId, name, description, activityType, dateTime, location, createdBy, imageUrl, members,weather,maxParticipants,registrationDeadline
         )
     }
 }

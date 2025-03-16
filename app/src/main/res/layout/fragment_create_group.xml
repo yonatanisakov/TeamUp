@@ -186,6 +186,40 @@
                                 android:text="Select Date &amp; Time" />
 
                         </com.google.android.material.textfield.TextInputLayout>
+                        <!-- Registration deadline -->
+                        <LinearLayout
+                            android:id="@+id/registrationDeadlineContainer"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="16dp"
+                            android:orientation="vertical">
+
+
+                            <com.google.android.material.textfield.TextInputLayout
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="8dp"
+                                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu">
+
+                                <AutoCompleteTextView
+                                    android:id="@+id/registrationDeadlineSpinner"
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content"
+                                    android:inputType="none"
+                                    android:hint="Select registration deadline" />
+
+                            </com.google.android.material.textfield.TextInputLayout>
+
+                            <TextView
+                                android:id="@+id/registrationDeadlinePreview"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp"
+                                android:text=""
+                                android:textStyle="italic"
+                                android:textAppearance="?attr/textAppearanceBodySmall"
+                                android:visibility="gone" />
+                        </LinearLayout>
 
                         <!-- Location -->
                         <com.google.android.material.textfield.TextInputLayout

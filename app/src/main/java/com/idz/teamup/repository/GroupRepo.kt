@@ -13,6 +13,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 import com.google.firebase.storage.FirebaseStorage
+import com.idz.teamup.service.DateService
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import java.util.UUID
@@ -102,10 +103,23 @@ class GroupRepo(context: Context) {
                     if (updatedMembers.contains(userEmail)) {
                         updatedMembers.remove(userEmail)
                     } else {
+                        // Check if event is in the past
+                        if (DateService.isPastEvent(group.dateTime)) {
+                            throw Exception("Cannot join past events")
+                        }
+
+                        // Check registration deadline
+                        if (group.registrationDeadline.isNotBlank() &&
+                            !DateService.isRegistrationOpen(group.registrationDeadline)
+                        ) {
+                            throw Exception("Registration period has ended")
+                        }
+
+                        // Check capacity
                         if (group.maxParticipants > 0 && group.members.size >= group.maxParticipants) {
-                            // Group is full - throw exception to abort transaction
                             throw Exception("Group is at full capacity")
                         }
+
                         updatedMembers.add(userEmail)
                     }
 
@@ -119,11 +133,7 @@ class GroupRepo(context: Context) {
                 }
             } catch (e: Exception) {
                 withContext(Dispatchers.Main) {
-                    if (e.message?.contains("full capacity") == true) {
-                        Log.e("GroupRepo", "User attempted to join full group")
-                    } else {
-                        Log.e("GroupRepo", "Error updating membership: ${e.message}", e)
-                    }
+                    Log.e("GroupRepo", "Error updating membership: ${e.message}", e)
                     onComplete(false)
                 }
             }
