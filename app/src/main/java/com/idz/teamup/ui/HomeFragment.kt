@@ -185,8 +185,7 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
 
     override fun onResume() {
         super.onResume()
-        if (GroupViewModel.refreshGroups || GroupViewModel.updatedGroupId != null)
-            groupViewModel.loadGroups(forceRefresh = true)
+        groupViewModel.loadGroups()
     }
 
 }

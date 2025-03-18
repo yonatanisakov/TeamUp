@@ -155,10 +155,8 @@ class MyGroupsFragment : Fragment(R.layout.fragment_my_groups) {
 
     override fun onResume() {
         super.onResume()
-        viewModel.loadMyGroups(GroupViewModel.refreshGroups || GroupViewModel.updatedGroupId != null)
+        viewModel.loadMyGroups(false)
 
-        GroupViewModel.refreshGroups = false
-        GroupViewModel.updatedGroupId = null
     }
 
 }
