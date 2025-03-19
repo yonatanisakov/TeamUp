@@ -13,10 +13,7 @@ import com.idz.teamup.model.Group
 import com.idz.teamup.repository.GroupRepo
 import com.idz.teamup.service.DateService
 import kotlinx.coroutines.launch
-import java.text.SimpleDateFormat
-import java.util.Calendar
-import java.util.Date
-import java.util.Locale
+
 
 class GroupViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -32,10 +29,6 @@ class GroupViewModel(application: Application) : AndroidViewModel(application) {
     private val _filterMode = MutableLiveData("upcoming")
     val filterMode: LiveData<String> = _filterMode
 
-    companion object {
-        var refreshGroups = false
-        var updatedGroupId: String? = null
-    }
     init {
         _filteredGroups.addSource(groups) { groupsList ->
             _filteredGroups.value = applyFilter(groupsList ?: emptyList())
@@ -60,9 +53,6 @@ class GroupViewModel(application: Application) : AndroidViewModel(application) {
                     group
                 }
                 val result = groupRepo.createGroup(finalGroup)
-                if(result.first){
-                    refreshGroups = true
-                }
                 onComplete(result.first,result.second)
             } catch (e: Exception) {
                 Log.e("TeamUp", "Error in ${this::class.java.simpleName}: ${e.message}", e)
@@ -77,25 +67,18 @@ class GroupViewModel(application: Application) : AndroidViewModel(application) {
 
 
     fun loadGroups(forceRefresh: Boolean = false) {
-        if (!forceRefresh && groups.value != null && groups.value?.isNotEmpty() == true && updatedGroupId == null) {
+        if (!forceRefresh && groups.value != null && groups.value?.isNotEmpty() == true) {
             return
         }
 
         _isLoading.value = true
 
-
-        val specificGroupUpdate = updatedGroupId
-        updatedGroupId = null
-        refreshGroups = false
-
         viewModelScope.launch {
-            if (specificGroupUpdate != null) {
-                groupRepo.fetchGroupDetailsFromFirestore(specificGroupUpdate)
-            } else {
+            try {
                 groupRepo.getGroups()
-            }
+            } finally {
             _isLoading.value = false
-
+            }
         }
     }
     fun setFilterMode(mode: String) {

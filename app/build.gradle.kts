@@ -1,3 +1,30 @@
+import java.io.FileInputStream
+import java.util.Properties
+
+val apiKeysPropertiesFile = rootProject.file("apikeys.properties")
+val apiKeysProperties = Properties()
+apiKeysProperties.load(FileInputStream(apiKeysPropertiesFile))
+// Add after your other tasks
+tasks.register("generateGoogleServices") {
+    doLast {
+        val templateFile = File(projectDir, "google-services.json.template")
+        val outputFile = File(projectDir, "google-services.json")
+
+        if (templateFile.exists()) {
+            var content = templateFile.readText()
+            content = content.replace("\${FIREBASE_API_KEY}", apiKeysProperties.getProperty("FIREBASE_API_KEY"))
+            outputFile.writeText(content)
+            println("Generated google-services.json file")
+        } else {
+            println("Template file not found")
+        }
+    }
+}
+
+// Make sure this task runs before the app is built
+tasks.named("preBuild") {
+    dependsOn("generateGoogleServices")
+}
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -17,9 +44,15 @@ android {
         versionCode = 1
         versionName = "1.0"
 
+        buildConfigField("String", "FIREBASE_API_KEY", apiKeysProperties.getProperty("FIREBASE_API_KEY"))
+        buildConfigField("String", "CITIES_API_KEY", apiKeysProperties.getProperty("CITIES_API_KEY"))
+        buildConfigField("String", "WEATHER_API_KEY", apiKeysProperties.getProperty("WEATHER_API_KEY"))
+
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
-
+    buildFeatures {
+        buildConfig = true
+    }
     buildTypes {
         release {
             isMinifyEnabled = false

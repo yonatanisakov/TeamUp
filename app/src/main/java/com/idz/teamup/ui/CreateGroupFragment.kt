@@ -17,6 +17,7 @@ import androidx.navigation.fragment.findNavController
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.textfield.TextInputEditText
+import com.idz.teamup.BuildConfig
 import com.idz.teamup.R
 import com.idz.teamup.model.Group
 import com.idz.teamup.repository.GeoDBRepo
@@ -255,7 +256,7 @@ class CreateGroupFragment : Fragment(R.layout.fragment_create_group) {
         viewLifecycleOwner.lifecycleScope.launch {
             try {
                 val cityList =
-                    GeoDBRepo.getCities(query, "2e6b1dc02dmsh07a36dd56161cbcp16de01jsn2a659fb6544c")
+                    GeoDBRepo.getCities(query, BuildConfig.CITIES_API_KEY)
 
                 if (!isAdded) return@launch
                 requireActivity().runOnUiThread {

@@ -14,8 +14,7 @@ import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 import com.google.firebase.storage.FirebaseStorage
 import com.idz.teamup.service.DateService
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.launch
+
 import java.util.UUID
 
 class GroupRepo(context: Context) {
@@ -23,13 +22,15 @@ class GroupRepo(context: Context) {
     private val storage = FirebaseStorage.getInstance()
     val auth = FirebaseAuth.getInstance()
     private val groupDao = GroupDatabase.getDatabase(context).groupDao()
-    private var loadGroupsJob: kotlinx.coroutines.Job? = null
 
     suspend fun createGroup(group: Group): Pair<Boolean, String?> {
         return try {
             val groupId = db.collection("groups").document().id
             val newGroup = group.copy(groupId = groupId, createdBy = auth.currentUser?.email ?: "")
             db.collection("groups").document(groupId).set(newGroup).await()
+
+            groupDao.insertGroup(newGroup.toGroupEntity())
+
             Pair(true, groupId)
 
         } catch (e: Exception) {
@@ -38,30 +39,26 @@ class GroupRepo(context: Context) {
         }
     }
     suspend fun getGroups() {
-        loadGroupsJob?.cancel()
+        withContext(Dispatchers.IO) {
+            try {
+                val snapshot = db.collection("groups").get().await()
+                val groups = snapshot.toObjects(Group::class.java)
+                val groupEntities = groups.map { it.toGroupEntity() }
 
-        loadGroupsJob = coroutineScope {
-            launch(Dispatchers.IO) {
-
-                try {
-                    val cachedGroups = groupDao.getAllGroupsSync()
-
-                    val snapshot = db.collection("groups").get().await()
-                    val groups = snapshot.toObjects(Group::class.java)
-                    val groupEntities = groups.map { it.toGroupEntity() }
-
-                    if (groupEntities.isNotEmpty()) {
-                        groupDao.clearGroups()
-                        groupDao.insertGroups(groupEntities)
-                    } else if (cachedGroups.isEmpty()) {
-                        Log.w("GroupRepo", "Firestore returned empty list, and no cached data available.")
-                    }
-                } catch (e: Exception) {
-                    Log.e("GroupRepo", "Error fetching Firestore. Keeping cached Room data.", e)
+                if (groupEntities.isNotEmpty()) {
+                    groupDao.clearGroups()
+                    groupDao.insertGroups(groupEntities)
                 }
+                else {
+                    val cachedGroups = groupDao.getAllGroupsSync()
+                    if (cachedGroups.isEmpty()) {
+                        Log.w("GroupRepo", "Firestore returned empty list, and no cached data available.")
+                    } else {}
+                }
+            } catch (e: Exception) {
+                Log.e("GroupRepo", "Error fetching Firestore. Keeping cached Room data.", e)
             }
         }
-        loadGroupsJob?.join()
     }
 
     fun getGroupDetails(groupId: String): LiveData<GroupEntity?> {
@@ -94,14 +91,16 @@ class GroupRepo(context: Context) {
 
         withContext(Dispatchers.IO) {
             try {
+                var updatedMembers: List<String> = emptyList()
+
                 db.runTransaction { transaction ->
                     val snapshot = transaction.get(groupRef)
                     val group = snapshot.toObject(Group::class.java) ?: return@runTransaction
 
-                    val updatedMembers = group.members.toMutableList()
+                    val mutableMembers = group.members.toMutableList()
 
-                    if (updatedMembers.contains(userEmail)) {
-                        updatedMembers.remove(userEmail)
+                    if (mutableMembers.contains(userEmail)) {
+                        mutableMembers.remove(userEmail)
                     } else {
                         // Check if event is in the past
                         if (DateService.isPastEvent(group.dateTime)) {
@@ -120,14 +119,18 @@ class GroupRepo(context: Context) {
                             throw Exception("Group is at full capacity")
                         }
 
-                        updatedMembers.add(userEmail)
+                        mutableMembers.add(userEmail)
                     }
 
-                    transaction.update(groupRef, "members", updatedMembers)
-                    updatedMembers
+                    transaction.update(groupRef, "members", mutableMembers)
+                    updatedMembers = mutableMembers
                 }.await()
 
-                fetchGroupDetailsFromFirestore(groupId)
+                val localGroup = groupDao.getGroupByIdSync(groupId)
+                localGroup?.let {
+                    val updatedGroup = it.copy(members = updatedMembers)
+                    groupDao.insertGroup(updatedGroup)
+                }
                 withContext(Dispatchers.Main) {
                     onComplete(true)
                 }
@@ -203,15 +206,8 @@ class GroupRepo(context: Context) {
         withContext(Dispatchers.IO) {
             try {
                 db.collection("groups").document(groupId).delete().await()
-                try {
-                    val group = groupDao.getGroupByIdSync(groupId)
-                    if (group != null) {
-                        groupDao.deleteGroup(groupId)
-                    }
-                } catch (e: Exception) {
-                    Log.e("GroupRepo", "Error deleting from local database: ${e.message}", e)
-                }
-                getGroups()
+
+                groupDao.deleteGroup(groupId)
 
                 withContext(Dispatchers.Main) {
                     onComplete(true)

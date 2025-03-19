@@ -7,6 +7,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
+import com.idz.teamup.BuildConfig
 
 import com.idz.teamup.model.Group
 import com.idz.teamup.repository.GroupRepo
@@ -106,9 +107,6 @@ class GroupDetailsViewModel(application: Application) : AndroidViewModel(applica
                     try {
                         repo.updateGroupDetails(groupId, newName, newDesc, newImageUri) { result ->
                             success = result
-                            if (success) {
-                                GroupViewModel.updatedGroupId = groupId
-                            }
                         }
                     } catch (e: Exception) {
                         Log.e(
@@ -149,20 +147,8 @@ class GroupDetailsViewModel(application: Application) : AndroidViewModel(applica
             withContext(NonCancellable) {
                 try {
                     var success = false
-                    try {
-                        repo.deleteGroup(groupId) { result ->
-                            success = result
-                            if (success) {
-                                GroupViewModel.refreshGroups = true
-                            }
-                        }
-                    } catch (e: Exception) {
-                        Log.e(
-                            "GroupDetailsViewModel",
-                            "Error during group deletion: ${e.message}",
-                            e
-                        )
-                        success = false
+                    repo.deleteGroup(groupId) { result ->
+                        success = result
                     }
 
                     withContext(Dispatchers.Main) {
@@ -170,18 +156,11 @@ class GroupDetailsViewModel(application: Application) : AndroidViewModel(applica
                             _isLoading.value = false
                             onComplete(success)
                         } catch (e: Exception) {
-                            Log.d(
-                                "GroupDetailsViewModel",
-                                "Could not deliver callback - fragment likely detached"
-                            )
+                            Log.d("GroupDetailsViewModel", "Could not deliver callback - fragment likely detached")
                         }
                     }
                 } catch (e: Exception) {
-                    Log.e(
-                        "GroupDetailsViewModel",
-                        "Unexpected error in deletion coroutine: ${e.message}",
-                        e
-                    )
+                    Log.e("GroupDetailsViewModel", "Unexpected error in deletion coroutine: ${e.message}", e)
                 }
             }
         }
@@ -244,7 +223,7 @@ class GroupDetailsViewModel(application: Application) : AndroidViewModel(applica
                 WeatherRepo.fetchWeather(
                     city,
                     dateTime,
-                    "HJBa6wYcxMgPDR4kOlmaIgzDVAOMbaor"
+                    BuildConfig.WEATHER_API_KEY
                 ) { result ->
                     _weather.postValue(result)
                     viewModelScope.launch(Dispatchers.IO) {

@@ -34,25 +34,18 @@ class MyGroupsViewModel(application: Application) : AndroidViewModel(application
         val currentUserEmail = auth.currentUser?.email ?: return
 
         if (isRefreshing) return
-        isRefreshing = true
 
+        isRefreshing = true
         _isLoading.value = true
 
         viewModelScope.launch {
             try {
-                val localGroups = groupRepo.getAllGroupsFromRoomSync()
-                val filteredLocalGroups = localGroups.filter { it.createdBy == currentUserEmail }
-
-                _myGroups.postValue(filteredLocalGroups)
-
-
-                if (forceRefresh || filteredLocalGroups.isEmpty()) {
+                if (forceRefresh) {
                     groupRepo.getGroups()
-
-                    val updatedGroups = groupRepo.getAllGroupsFromRoomSync()
-                    val filteredUpdatedGroups = updatedGroups.filter { it.createdBy == currentUserEmail }
-                    _myGroups.postValue(filteredUpdatedGroups)
                 }
+                val allGroups = groupRepo.getAllGroupsFromRoomSync()
+                val myGroups = allGroups.filter { it.createdBy == currentUserEmail }
+                _myGroups.postValue(myGroups)
             }
             catch (e: Exception) {
                 Log.e("MyGroupsViewModel", "Error loading groups: ${e.message}", e)
@@ -74,8 +67,6 @@ class MyGroupsViewModel(application: Application) : AndroidViewModel(application
                         val currentGroups = _myGroups.value ?: emptyList()
                         val updatedGroups = currentGroups.filter { it.groupId != groupId }
                         _myGroups.postValue(updatedGroups)
-
-                        GroupViewModel.refreshGroups = true
                     }
 
                     _isLoading.postValue(false)

@@ -77,30 +77,46 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
     }
 
     private fun observeViewModel() {
+        groupViewModel.isLoading.observe(viewLifecycleOwner) { isLoading ->
+            if (!swipeRefreshLayout.isRefreshing) {
+                loadingOverlay.visibility = if (isLoading) View.VISIBLE else View.GONE
+                if (isLoading) {
+                    recyclerView.visibility = View.GONE
+                    emptyStateContainer.visibility = View.GONE
+                }
+            } else if (!isLoading) {
+                swipeRefreshLayout.isRefreshing = false
+            }
+
+            createFirstGroupButton.isEnabled = !isLoading
+        }
+
         groupViewModel.filteredGroups.observe(viewLifecycleOwner) { groups ->
             groups?.let {
                 groupAdapter.updateGroups(it)
 
-                if (it.isEmpty()) {
-                    emptyStateContainer.visibility = View.VISIBLE
-                    recyclerView.visibility = View.GONE
+                if (groupViewModel.isLoading.value != true) {
+                    if (it.isEmpty()) {
+                        emptyStateContainer.visibility = View.VISIBLE
+                        recyclerView.visibility = View.GONE
 
-                    val emptyStateText = view?.findViewById<TextView>(R.id.emptyStateText)
-                    emptyStateText?.text = when (groupViewModel.filterMode.value) {
-                        "upcoming" ->  "No upcoming groups found"
-                        "past" ->  "No past groups found"
-                        else ->  "No groups found"
-                    }
+                        val emptyStateText = view?.findViewById<TextView>(R.id.emptyStateText)
+                        emptyStateText?.text = when (groupViewModel.filterMode.value) {
+                            "upcoming" -> "No upcoming groups found"
+                            "past" -> "No past groups found"
+                            else -> "No groups found"
+                        }
 
-                } else {
-                    emptyStateContainer.visibility = View.GONE
-                    recyclerView.visibility = View.VISIBLE
+                    } else {
+                        emptyStateContainer.visibility = View.GONE
+                        recyclerView.visibility = View.VISIBLE
 
-                    if (scrollPosition > 0 && !swipeRefreshLayout.isRefreshing && groups.isNotEmpty()) {
-                        recyclerView.post {
-                            val targetPosition = minOf(scrollPosition, groups.size - 1)
-                            if (targetPosition >= 0) {
-                                recyclerView.scrollToPosition(targetPosition)
+                        if (scrollPosition > 0 && !swipeRefreshLayout.isRefreshing && groups.isNotEmpty()) {
+                            recyclerView.post {
+                                val targetPosition = minOf(scrollPosition, groups.size - 1)
+                                if (targetPosition >= 0) {
+                                    recyclerView.scrollToPosition(targetPosition)
+                                }
                             }
                         }
                     }
@@ -109,15 +125,6 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
             }
         }
 
-        groupViewModel.isLoading.observe(viewLifecycleOwner) { isLoading ->
-                if (!swipeRefreshLayout.isRefreshing) {
-                    loadingOverlay.visibility = if (isLoading) View.VISIBLE else View.GONE
-                } else if (!isLoading) {
-                    swipeRefreshLayout.isRefreshing = false
-                }
-
-                createFirstGroupButton.isEnabled = !isLoading
-            }
     }
 
     private fun setupListeners() {
@@ -185,8 +192,7 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
 
     override fun onResume() {
         super.onResume()
-        if (GroupViewModel.refreshGroups || GroupViewModel.updatedGroupId != null)
-            groupViewModel.loadGroups(forceRefresh = true)
+        groupViewModel.loadGroups()
     }
 
 }
