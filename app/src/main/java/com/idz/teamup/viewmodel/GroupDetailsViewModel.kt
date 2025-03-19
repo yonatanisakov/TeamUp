@@ -7,6 +7,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.viewModelScope
+import com.idz.teamup.BuildConfig
 
 import com.idz.teamup.model.Group
 import com.idz.teamup.repository.GroupRepo
@@ -222,7 +223,7 @@ class GroupDetailsViewModel(application: Application) : AndroidViewModel(applica
                 WeatherRepo.fetchWeather(
                     city,
                     dateTime,
-                    "HJBa6wYcxMgPDR4kOlmaIgzDVAOMbaor"
+                    BuildConfig.WEATHER_API_KEY
                 ) { result ->
                     _weather.postValue(result)
                     viewModelScope.launch(Dispatchers.IO) {

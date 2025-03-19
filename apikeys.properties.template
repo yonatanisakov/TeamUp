@@ -1,0 +1,3 @@
+FIREBASE_API_KEY = "your_firebase_api"
+GEODB_API_KEY = "your_geodb_api"
+TOMMOROW_API_KEY = "your_tommorowio_api"
