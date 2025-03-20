@@ -223,7 +223,7 @@ class GroupDetailsViewModel(application: Application) : AndroidViewModel(applica
                 WeatherRepo.fetchWeather(
                     city,
                     dateTime,
-                    BuildConfig.WEATHER_API_KEY
+                    BuildConfig.TOMMOROW_API_KEY
                 ) { result ->
                     _weather.postValue(result)
                     viewModelScope.launch(Dispatchers.IO) {

@@ -45,8 +45,8 @@ android {
         versionName = "1.0"
 
         buildConfigField("String", "FIREBASE_API_KEY", apiKeysProperties.getProperty("FIREBASE_API_KEY"))
-        buildConfigField("String", "CITIES_API_KEY", apiKeysProperties.getProperty("CITIES_API_KEY"))
-        buildConfigField("String", "WEATHER_API_KEY", apiKeysProperties.getProperty("WEATHER_API_KEY"))
+        buildConfigField("String", "GEODB_API_KEY", apiKeysProperties.getProperty("GEODB_API_KEY"))
+        buildConfigField("String", "TOMMOROW_API_KEY", apiKeysProperties.getProperty("TOMMOROW_API_KEY"))
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

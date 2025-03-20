@@ -256,7 +256,7 @@ class CreateGroupFragment : Fragment(R.layout.fragment_create_group) {
         viewLifecycleOwner.lifecycleScope.launch {
             try {
                 val cityList =
-                    GeoDBRepo.getCities(query, BuildConfig.CITIES_API_KEY)
+                    GeoDBRepo.getCities(query, BuildConfig.GEODB_API_KEY)
 
                 if (!isAdded) return@launch
                 requireActivity().runOnUiThread {
